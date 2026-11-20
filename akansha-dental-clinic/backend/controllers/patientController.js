@@ -1,34 +1,36 @@
 const { query, getIsDbConnected } = require('../config/db');
+const { getStore, saveStore } = require('../database/store');
 const { success, error } = require('../utils/responseHelper');
 
-let memoryPatients = [
-  {
-    id: 1,
-    full_name: 'Sunita Verma',
-    phone: '9826012345',
-    email: 'sunita.verma@example.com',
-    date_of_birth: '1988-04-12',
-    gender: 'FEMALE',
-    blood_group: 'B+',
-    medical_history: 'No chronic allergies. History of mild tooth sensitivity in lower molar.',
-    created_at: new Date().toISOString()
-  }
-];
-
-let nextPatientId = 2;
+const normalizePatient = (p) => ({
+  id: p.id,
+  firstName: p.firstName || (p.full_name || p.fullName || '').split(' ')[0] || 'Patient',
+  lastName: p.lastName || (p.full_name || p.fullName || '').split(' ').slice(1).join(' ') || '',
+  fullName: p.fullName || p.full_name || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
+  full_name: p.fullName || p.full_name || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
+  phone: p.phone,
+  email: p.email || '',
+  address: p.address || 'Bhopal, MP',
+  dateOfBirth: p.dateOfBirth || p.date_of_birth || null,
+  bloodGroup: p.bloodGroup || p.blood_group || 'B+',
+  medicalHistory: p.medicalHistory || p.medical_history || '',
+  createdAt: p.createdAt || p.created_at || new Date().toISOString()
+});
 
 const getPatients = async (req, res, next) => {
   try {
     const { search, page = 0, size = 10 } = req.query;
+    const store = getStore();
+
     const pageNum = Math.max(0, parseInt(page, 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(size, 10)));
 
-    let list = memoryPatients;
+    let list = (store.patients || []).map(normalizePatient);
 
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(p =>
-        p.full_name.toLowerCase().includes(q) ||
+        p.fullName.toLowerCase().includes(q) ||
         p.phone.includes(q) ||
         (p.email && p.email.toLowerCase().includes(q))
       );
@@ -53,9 +55,10 @@ const getPatients = async (req, res, next) => {
 const getPatientById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const pat = memoryPatients.find(p => p.id === id);
+    const store = getStore();
+    const pat = store.patients.find(p => p.id === id);
     if (!pat) return error(res, `Patient #${id} not found`, 404);
-    return success(res, pat, 'Patient record retrieved.');
+    return success(res, normalizePatient(pat), 'Patient record retrieved.');
   } catch (err) {
     next(err);
   }
@@ -63,23 +66,42 @@ const getPatientById = async (req, res, next) => {
 
 const createPatient = async (req, res, next) => {
   try {
-    const { full_name, phone, email, date_of_birth, gender, blood_group, medical_history } = req.body;
-    if (!full_name || !phone) return error(res, 'Full name and phone are required', 400);
+    const { firstName, lastName, fullName, phone, email, address, medicalHistory } = req.body;
+    const store = getStore();
+
+    const name = fullName || `${firstName || ''} ${lastName || ''}`.trim();
+    if (!name || !phone) return error(res, 'Patient name and contact phone are required.', 400);
+
+    const newId = store.patients.length > 0 ? Math.max(...store.patients.map(p => p.id)) + 1 : 1;
 
     const newPat = {
-      id: nextPatientId++,
-      full_name,
-      phone,
-      email: email || null,
-      date_of_birth: date_of_birth || null,
-      gender: gender || 'OTHER',
-      blood_group: blood_group || null,
-      medical_history: medical_history || '',
-      created_at: new Date().toISOString()
+      id: newId,
+      firstName: firstName || name.split(' ')[0],
+      lastName: lastName || name.split(' ').slice(1).join(' ') || '',
+      fullName: name,
+      full_name: name,
+      phone: phone.trim(),
+      email: email || '',
+      address: address || 'Bhopal, MP',
+      medicalHistory: medicalHistory || '',
+      createdAt: new Date().toISOString()
     };
 
-    memoryPatients.unshift(newPat);
-    return success(res, newPat, 'Patient registered successfully.', 201);
+    store.patients.unshift(newPat);
+    saveStore();
+
+    if (getIsDbConnected()) {
+      try {
+        await query(
+          'INSERT INTO patients (full_name, phone, email, medical_history) VALUES (?, ?, ?, ?)',
+          [name, phone.trim(), email || null, medicalHistory || null]
+        );
+      } catch (dbErr) {
+        console.warn('MySQL patient insert notice:', dbErr.message);
+      }
+    }
+
+    return success(res, normalizePatient(newPat), 'Patient registered successfully.', 201);
   } catch (err) {
     next(err);
   }
@@ -88,11 +110,14 @@ const createPatient = async (req, res, next) => {
 const updatePatient = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const pat = memoryPatients.find(p => p.id === id);
+    const store = getStore();
+    const pat = store.patients.find(p => p.id === id);
     if (!pat) return error(res, `Patient #${id} not found`, 404);
 
     Object.assign(pat, req.body);
-    return success(res, pat, 'Patient record updated.');
+    saveStore();
+
+    return success(res, normalizePatient(pat), 'Patient record updated.');
   } catch (err) {
     next(err);
   }

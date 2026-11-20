@@ -95,14 +95,14 @@ export default function DoctorsPage() {
             <Spinner message="Loading dental specialist profiles..." />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-              {doctors.map((doctor) => {
-                const docName = doctor.fullName || doctor.name || 'Doctor';
-                const docSpecialization = doctor.specialization || 'Dental Specialist';
-                const docQual = doctor.qualification || 'BDS, MDS';
-                const docExp = doctor.experienceYears || doctor.experience_years || 5;
-                const docFee = doctor.consultationFee !== undefined ? doctor.consultationFee : (doctor.consultation_fee || 500);
-                const docImg = doctor.imageUrl || doctor.image_url || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600';
-                const firstName = docName.includes(' ') ? docName.split(' ')[1] : docName;
+              {doctors && doctors.filter(Boolean).map((doctor) => {
+                const docName = String(doctor?.fullName || doctor?.name || 'Doctor');
+                const docSpecialization = doctor?.specialization || 'Dental Specialist';
+                const docQual = doctor?.qualification || 'BDS, MDS';
+                const docExp = doctor?.experienceYears || doctor?.experience_years || 5;
+                const docFee = doctor?.consultationFee !== undefined ? doctor.consultationFee : (doctor?.consultation_fee || 500);
+                const docImg = doctor?.imageUrl || doctor?.image_url || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600';
+                const firstName = docName.includes(' ') ? (docName.split(' ')[1] || docName) : docName;
 
                 return (
                   <div key={doctor.id} className="card" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '2.5rem', padding: '2rem', alignItems: 'center' }}>

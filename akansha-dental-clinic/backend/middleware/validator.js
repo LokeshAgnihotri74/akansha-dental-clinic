@@ -5,22 +5,40 @@ const { error } = require('../utils/responseHelper');
 
 /**
  * Validate Appointment Booking Request Body
+ * Seamlessly supports both `patientFirstName` + `patientLastName` AND `patientName`
  */
 const validateAppointmentBooking = (req, res, next) => {
-  const { patientName, patientPhone, patientEmail, appointmentDate, timeSlot } = req.body;
+  const {
+    patientName,
+    patientFirstName,
+    patientLastName,
+    patientPhone,
+    phone,
+    patientEmail,
+    email,
+    appointmentDate,
+    timeSlot
+  } = req.body;
+
   const errors = [];
 
   // 1. Patient Name Validation
-  if (!patientName || typeof patientName !== 'string' || patientName.trim().length < 2) {
-    errors.push({ field: 'patientName', message: 'Full name is required and must be at least 2 characters.' });
+  const fullName = patientName || `${patientFirstName || ''} ${patientLastName || ''}`.trim();
+  if (!fullName || fullName.length < 2) {
+    errors.push({ field: 'patientName', message: 'First name is required.' });
   }
 
   // 2. 10-Digit Indian Mobile Number Validation
-  if (!patientPhone) {
+  const rawPhone = patientPhone || phone;
+  if (!rawPhone) {
     errors.push({ field: 'patientPhone', message: 'Contact number is required.' });
   } else {
-    const cleanedPhone = patientPhone.toString().replace(/\D/g, '');
-    if (!/^[6-9]\d{9}$/.test(cleanedPhone)) {
+    const cleanedPhone = rawPhone.toString().replace(/\D/g, '');
+    const valid10 = cleanedPhone.startsWith('91') && cleanedPhone.length === 12 
+      ? cleanedPhone.slice(2) 
+      : cleanedPhone;
+
+    if (!/^[6-9]\d{9}$/.test(valid10)) {
       errors.push({ 
         field: 'patientPhone', 
         message: 'Invalid contact number. Must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.' 
@@ -29,9 +47,10 @@ const validateAppointmentBooking = (req, res, next) => {
   }
 
   // 3. Email Validation (if provided)
-  if (patientEmail && patientEmail.trim()) {
+  const rawEmail = patientEmail || email;
+  if (rawEmail && rawEmail.trim()) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(patientEmail.trim())) {
+    if (!emailRegex.test(rawEmail.trim())) {
       errors.push({ field: 'patientEmail', message: 'Please provide a valid email address.' });
     }
   }
@@ -43,11 +62,6 @@ const validateAppointmentBooking = (req, res, next) => {
     const dateObj = new Date(appointmentDate);
     if (isNaN(dateObj.getTime())) {
       errors.push({ field: 'appointmentDate', message: 'Invalid date format. Expected YYYY-MM-DD.' });
-    } else {
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (appointmentDate < todayStr) {
-        errors.push({ field: 'appointmentDate', message: 'Appointment date cannot be in the past.' });
-      }
     }
   }
 

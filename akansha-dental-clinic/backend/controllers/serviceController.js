@@ -1,105 +1,32 @@
 const { query, getIsDbConnected } = require('../config/db');
+const { getStore, saveStore } = require('../database/store');
 const { success, error } = require('../utils/responseHelper');
 
-let memoryServices = [
-  {
-    id: 100,
-    name: 'General Dental Checkup & Consultation',
-    category: 'Diagnostic & Preventative',
-    base_price: 399.00,
-    duration_minutes: 30,
-    description: 'Comprehensive intraoral examination, digital X-ray screening, periodontal health score, and tailored treatment planning.',
-    is_active: true
-  },
-  {
-    id: 1,
-    name: 'Immediate Dental Implants',
-    category: 'Implantology & Surgery',
-    base_price: 32990.00,
-    duration_minutes: 60,
-    description: 'Same-day precision implants, biological integration, and custom zirconia natural-feel crowns.',
-    is_active: true
-  },
-  {
-    id: 2,
-    name: 'Single-Visit Root Canal Treatment',
-    category: 'Endodontics',
-    base_price: 3500.00,
-    duration_minutes: 45,
-    description: 'Rotary microscopic cleaning, painless apex locator disinfection, and hermetic bio-ceramic seal.',
-    is_active: true
-  },
-  {
-    id: 3,
-    name: 'Clear Aligners & Invisible Braces',
-    category: 'Orthodontics',
-    base_price: 7000.00,
-    duration_minutes: 40,
-    description: 'Custom 3D scanned transparent aligners for discreet, comfortable teeth straightening.',
-    is_active: true
-  },
-  {
-    id: 4,
-    name: 'Deep Teeth Cleaning & Ultrasonic Scaling',
-    category: 'Preventive Dentistry',
-    base_price: 1499.00,
-    duration_minutes: 30,
-    description: 'Removal of dental plaque, tartar, coffee/tobacco stains, and enamel fluoride polish.',
-    is_active: true
-  },
-  {
-    id: 5,
-    name: 'Composite Aesthetic Tooth Fillings',
-    category: 'Cosmetic Dentistry',
-    base_price: 1200.00,
-    duration_minutes: 30,
-    description: 'Invisible tooth-colored bio-compatible resin restorations matching your natural tooth shade.',
-    is_active: true
-  },
-  {
-    id: 6,
-    name: 'Wisdom Tooth Painless Extraction',
-    category: 'Oral Surgery',
-    base_price: 2500.00,
-    duration_minutes: 45,
-    description: 'Atraumatic surgical removal of impacted wisdom teeth with quick-healing socket preservation.',
-    is_active: true
-  },
-  {
-    id: 7,
-    name: 'Full Mouth Rehabilitation',
-    category: 'Advanced Prosthodontics',
-    base_price: 45000.00,
-    duration_minutes: 90,
-    description: 'Complete structural restoration of severely worn, broken, or missing teeth with precision crowns.',
-    is_active: true
-  }
-];
-
-let nextServiceId = 8;
+const normalizeService = (s) => ({
+  id: s.id,
+  name: s.name,
+  category: s.category || 'General Dentistry',
+  price: s.price !== undefined ? s.price : (s.base_price || 399),
+  base_price: s.base_price !== undefined ? s.base_price : (s.price || 399),
+  durationMinutes: s.durationMinutes || s.duration_minutes || 30,
+  duration_minutes: s.duration_minutes || s.durationMinutes || 30,
+  description: s.description || '',
+  active: s.active !== undefined ? s.active : (s.is_active !== undefined ? s.is_active : true),
+  is_active: s.is_active !== undefined ? s.is_active : (s.active !== undefined ? s.active : true)
+});
 
 const getServices = async (req, res, next) => {
   try {
     const activeOnly = req.query.activeOnly !== 'false';
-    let services = memoryServices;
+    const store = getStore();
 
-    if (getIsDbConnected()) {
-      try {
-        let sql = 'SELECT * FROM services';
-        if (activeOnly) sql += ' WHERE is_active = TRUE';
-        sql += ' ORDER BY id ASC';
-        const rows = await query(sql);
-        if (rows && rows.length > 0) services = rows;
-      } catch (err) {
-        console.warn('DB getServices error:', err.message);
-      }
-    }
+    let list = (store.services || []).map(normalizeService);
 
     if (activeOnly) {
-      services = services.filter(s => s.is_active);
+      list = list.filter(s => s.active);
     }
 
-    return success(res, services, 'Dental services catalog retrieved.');
+    return success(res, list, 'Dental services catalog retrieved.');
   } catch (err) {
     next(err);
   }
@@ -108,9 +35,10 @@ const getServices = async (req, res, next) => {
 const getServiceById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const service = memoryServices.find(s => s.id === id);
+    const store = getStore();
+    const service = store.services.find(s => s.id === id);
     if (!service) return error(res, `Service #${id} not found`, 404);
-    return success(res, service, 'Treatment details retrieved.');
+    return success(res, normalizeService(service), 'Treatment details retrieved.');
   } catch (err) {
     next(err);
   }
@@ -118,21 +46,32 @@ const getServiceById = async (req, res, next) => {
 
 const createService = async (req, res, next) => {
   try {
-    const { name, category, base_price, duration_minutes, description } = req.body;
+    const { name, category, price, base_price, durationMinutes, duration_minutes, description } = req.body;
+    const store = getStore();
+
     if (!name) return error(res, 'Service name is required', 400);
 
+    const newId = store.services.length > 0 ? Math.max(...store.services.map(s => s.id)) + 1 : 1;
+    const finalPrice = parseFloat(price !== undefined ? price : (base_price || 399));
+    const finalDuration = parseInt(durationMinutes !== undefined ? durationMinutes : (duration_minutes || 30), 10);
+
     const newService = {
-      id: nextServiceId++,
+      id: newId,
       name,
       category: category || 'General Dentistry',
-      base_price: parseFloat(base_price) || 0.00,
-      duration_minutes: parseInt(duration_minutes, 10) || 30,
+      price: finalPrice,
+      base_price: finalPrice,
+      durationMinutes: finalDuration,
+      duration_minutes: finalDuration,
       description: description || '',
+      active: true,
       is_active: true
     };
 
-    memoryServices.push(newService);
-    return success(res, newService, 'Treatment added to catalog.', 201);
+    store.services.push(newService);
+    saveStore();
+
+    return success(res, normalizeService(newService), 'Treatment added to catalog.', 201);
   } catch (err) {
     next(err);
   }
@@ -141,11 +80,14 @@ const createService = async (req, res, next) => {
 const updateService = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const service = memoryServices.find(s => s.id === id);
+    const store = getStore();
+    const service = store.services.find(s => s.id === id);
     if (!service) return error(res, `Service #${id} not found`, 404);
 
     Object.assign(service, req.body);
-    return success(res, service, 'Treatment updated.');
+    saveStore();
+
+    return success(res, normalizeService(service), 'Treatment updated.');
   } catch (err) {
     next(err);
   }
@@ -154,11 +96,15 @@ const updateService = async (req, res, next) => {
 const toggleStatus = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const service = memoryServices.find(s => s.id === id);
+    const store = getStore();
+    const service = store.services.find(s => s.id === id);
     if (!service) return error(res, `Service #${id} not found`, 404);
 
-    service.is_active = !service.is_active;
-    return success(res, service, `Service status toggled to ${service.is_active ? 'Active' : 'Inactive'}.`);
+    service.active = !service.active;
+    service.is_active = service.active;
+    saveStore();
+
+    return success(res, normalizeService(service), `Service status toggled.`);
   } catch (err) {
     next(err);
   }
@@ -167,7 +113,11 @@ const toggleStatus = async (req, res, next) => {
 const deleteService = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
-    memoryServices = memoryServices.filter(s => s.id !== id);
+    const store = getStore();
+
+    store.services = store.services.filter(s => s.id !== id);
+    saveStore();
+
     return success(res, null, `Service #${id} deleted.`);
   } catch (err) {
     next(err);

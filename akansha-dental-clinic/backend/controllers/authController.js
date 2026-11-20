@@ -1,29 +1,8 @@
 const bcrypt = require('bcryptjs');
 const { query, getIsDbConnected } = require('../config/db');
+const { getStore, saveStore } = require('../database/store');
 const { generateToken } = require('../utils/jwtHelper');
 const { success, error } = require('../utils/responseHelper');
-
-// In-memory fallback accounts for zero-friction local testing
-const FALLBACK_USERS = [
-  {
-    id: 1,
-    full_name: 'Dr. Akansha Sharma (Chief Director)',
-    username: 'admin@akanshadental.com',
-    email: 'admin@akanshadental.com',
-    password_hash: '$2a$10$BZ84NEU2/k9UsF3OsHzlHOJoNFslGOO3g8tdRLmSy2umfBuACM0Li', // password123
-    role: 'SUPER_ADMIN',
-    phone: '+91 8130 406 405'
-  },
-  {
-    id: 2,
-    full_name: 'Rohan Verma (Front Desk Staff)',
-    username: 'rohan@akanshadental.com',
-    email: 'rohan@akanshadental.com',
-    password_hash: '$2a$10$BZ84NEU2/k9UsF3OsHzlHOJoNFslGOO3g8tdRLmSy2umfBuACM0Li', // password123
-    role: 'STAFF',
-    phone: '+91 9876 543 210'
-  }
-];
 
 /**
  * Admin & Staff Login Handler
@@ -37,6 +16,7 @@ const login = async (req, res, next) => {
       return error(res, 'Please provide both username/email and password.', 400);
     }
 
+    const store = getStore();
     let user = null;
 
     if (getIsDbConnected()) {
@@ -49,13 +29,12 @@ const login = async (req, res, next) => {
           user = rows[0];
         }
       } catch (err) {
-        console.warn('MySQL lookup failed, falling back to memory accounts:', err.message);
+        console.warn('MySQL lookup failed, falling back to persistent store:', err.message);
       }
     }
 
-    // Fallback if MySQL offline or user not found in DB
     if (!user) {
-      user = FALLBACK_USERS.find(
+      user = store.admins.find(
         u => u.username.toLowerCase() === username.trim().toLowerCase() ||
              u.email.toLowerCase() === username.trim().toLowerCase()
       );
@@ -71,25 +50,44 @@ const login = async (req, res, next) => {
       return error(res, 'Invalid password. Please check your credentials.', 401);
     }
 
+    const roles = user.roles || (user.role === 'SUPER_ADMIN' ? ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'] : ['ROLE_STAFF']);
+
     // Generate JWT Token
     const token = generateToken({
-      id: user.id,
+      id: user.id || user.userId,
+      userId: user.id || user.userId,
       username: user.username,
       email: user.email,
-      fullName: user.full_name,
-      role: user.role
+      fullName: user.full_name || user.fullName,
+      role: user.role,
+      roles: roles
     });
 
     const userPayload = {
-      id: user.id,
-      fullName: user.full_name,
+      id: user.id || user.userId,
+      userId: user.id || user.userId,
+      fullName: user.full_name || user.fullName,
       username: user.username,
       email: user.email,
       role: user.role,
+      roles: roles,
       phone: user.phone
     };
 
-    return success(res, { token, user: userPayload }, 'Clinical authentication successful.');
+    // Return format explicitly supporting AuthContext.jsx:
+    // res.data.accessToken, res.data.userId, res.data.roles, res.data.fullName
+    return success(res, {
+      accessToken: token,
+      token: token,
+      userId: userPayload.userId,
+      id: userPayload.id,
+      fullName: userPayload.fullName,
+      username: userPayload.username,
+      email: userPayload.email,
+      role: userPayload.role,
+      roles: userPayload.roles,
+      user: userPayload
+    }, 'Clinical authentication successful.');
   } catch (err) {
     next(err);
   }
@@ -101,7 +99,20 @@ const login = async (req, res, next) => {
  */
 const getMe = async (req, res, next) => {
   try {
-    return success(res, { user: req.user }, 'User profile retrieved.');
+    const u = req.user;
+    const roles = u.roles || (u.role === 'SUPER_ADMIN' ? ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'] : ['ROLE_STAFF']);
+
+    const profile = {
+      id: u.id || u.userId,
+      userId: u.id || u.userId,
+      username: u.username,
+      email: u.email,
+      fullName: u.fullName || u.username,
+      role: u.role,
+      roles: roles
+    };
+
+    return success(res, profile, 'User profile retrieved.');
   } catch (err) {
     next(err);
   }
