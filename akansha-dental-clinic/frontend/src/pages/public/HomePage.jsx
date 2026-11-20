@@ -1,8 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Shield, Sparkles, Award, Clock, ArrowRight, Star, CheckCircle2, Phone, MapPin, UserCheck, Activity } from 'lucide-react';
+import { Calendar, Shield, Sparkles, Award, Clock, ArrowRight, Star, CheckCircle2, Phone, MapPin, UserCheck, Activity, Smile, User, ShieldCheck, Microscope } from 'lucide-react';
 import doctorService from '../../services/doctorService';
 import catalogService from '../../services/catalogService';
+import HeroFeatureCarousel from '../../components/HeroFeatureCarousel';
+
+function ToothIcon({ size = 24, color = "currentColor" }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M7 3C4.2 3 3 5.5 3 8c0 3.5 1.5 6 2.5 10 .8 3.2 2.5 3 3.5 0 .8-2.5 1.5-4 3-4s2.2 1.5 3 4c1 3 2.7 3.2 3.5 0 1-4 2.5-6.5 2.5-10 0-2.5-1.2-5-4-5-2 0-3 1.2-4.5 1.2S9 3 7 3z" />
+    </svg>
+  );
+}
+
+function getServiceIcon(name) {
+  const n = name?.toLowerCase() || '';
+  if (n.includes('cleaning') || n.includes('scaling')) {
+    return <Sparkles size={24} color="var(--color-primary)" />;
+  }
+  if (n.includes('canal') || n.includes('endodontic')) {
+    return <Activity size={24} color="var(--color-primary)" />;
+  }
+  if (n.includes('aligner') || n.includes('braces')) {
+    return <Smile size={24} color="var(--color-primary)" />;
+  }
+  if (n.includes('cosmetic') || n.includes('whitening')) {
+    return <Sparkles size={24} color="var(--color-primary)" />;
+  }
+  if (n.includes('pediatric')) {
+    return <User size={24} color="var(--color-primary)" />;
+  }
+  if (n.includes('removal') || n.includes('extraction')) {
+    return <ShieldCheck size={24} color="var(--color-primary)" />;
+  }
+  if (n.includes('scan') || n.includes('digital')) {
+    return <Microscope size={24} color="var(--color-primary)" />;
+  }
+  return <ToothIcon size={24} color="var(--color-primary)" />;
+}
 
 const DEFAULT_DOCTORS = [
   {
@@ -50,51 +94,105 @@ const DEFAULT_DOCTORS = [
 const DEFAULT_SERVICES = [
   {
     id: 1,
-    name: 'Precision Dental Implants',
+    name: 'Dental Implants',
     category: 'IMPLANTOLOGY',
-    price: 15000,
-    description: 'Titanium root replacement restoring natural chewing strength and lifetime aesthetics.'
+    price: 32990,
+    description: 'Same-day implants with surgical precision restoring natural chewing strength and lifetime aesthetics.',
+    imageUrl: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 2,
-    name: 'Microscopic Root Canal Therapy',
-    category: 'ENDODONTICS',
-    price: 2700,
-    description: 'Painless, single-sitting pulp disinfection and biological 3D root filling under magnification.'
+    name: 'Clear Aligners & Braces',
+    category: 'ORTHODONTICS',
+    price: 7000,
+    description: 'Discreet and comfortable orthodontic alignment correcting crowding with 3D digital planning.',
+    imageUrl: 'https://images.unsplash.com/photo-1609840114035-3c981b782dfe?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 3,
-    name: 'Clear Aligners & Invisible Braces',
-    category: 'ORTHODONTICS',
-    price: 27000,
-    description: 'Customized transparent aligners correcting crowding and malocclusion discreetly.'
+    name: 'Preventive Dentistry',
+    category: 'PREVENTIVE',
+    price: 1499,
+    description: 'Fluoride varnish, pit & fissure sealants, and gentle dental checkups for ages 0-13 & adults.',
+    imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 4,
-    name: 'Ultrasonic Scaling & Deep Polishing',
-    category: 'PREVENTIVE',
-    price: 900,
-    description: 'Gentle calculus removal, plaque eradication, and enamel polishing for vibrant gums.'
+    name: 'Root Canal Treatment',
+    category: 'ENDODONTICS',
+    price: 2700,
+    description: 'Painless, single-sitting pulp disinfection and biological 3D root filling under magnification.',
+    imageUrl: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 5,
-    name: 'Laser Teeth Whitening',
+    name: 'Cosmetic Dentistry',
     category: 'COSMETIC',
     price: 4200,
-    description: 'In-office photo-activated whitening brightening shades safely in 45 minutes.'
+    description: 'Smile makeover, aesthetic porcelain veneers, and photo-activated enamel shade brightening.',
+    imageUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 6,
-    name: 'Zirconia Aesthetic Crowns',
+    name: 'Teeth Cleaning & Scaling',
+    category: 'PREVENTIVE',
+    price: 900,
+    description: 'Gentle ultrasonic calculus removal, plaque eradication, and enamel polishing for vibrant gums.',
+    imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 7,
+    name: 'Dental Fillings',
+    category: 'RESTORATIVE',
+    price: 1500,
+    description: 'Seamless tooth-colored composite restorations repairing cavities with natural shade durability.',
+    imageUrl: 'https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 8,
+    name: 'Dental Bridges & Crowns',
     category: 'PROSTHODONTICS',
     price: 5400,
-    description: 'Cad-Cam milled metal-free crowns providing lifelike translucency and fracture resistance.'
+    description: 'Fixed precision-crafted prosthetic restorations bridging gaps left by missing teeth.',
+    imageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 9,
+    name: 'Painless Tooth Removal',
+    category: 'ORAL SURGERY',
+    price: 1200,
+    description: 'Atraumatic simple and wisdom tooth extractions performed with localized pain-free anesthesia.',
+    imageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 10,
+    name: 'Pediatric Dentistry',
+    category: 'PEDIATRIC',
+    price: 1000,
+    description: 'Child-friendly dental checkups, sealants, and gentle treatments in a comforting care setup.',
+    imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 11,
+    name: 'Advanced Laser Treatment',
+    category: 'ADVANCED TECH',
+    price: 3500,
+    description: 'Modern laser soft-tissue contouring and sterilization accelerating patient healing.',
+    imageUrl: 'https://images.unsplash.com/photo-1629909615184-74f495363b67?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 12,
+    name: 'Digital 3D Oral Scanning',
+    category: '3D DIAGNOSTICS',
+    price: 1500,
+    description: 'Zero-mess optical impressions generating sub-millimeter 3D dental mapping instantly.',
+    imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=800'
   }
 ];
 
 export default function HomePage() {
   const [featuredDoctors, setFeaturedDoctors] = useState(DEFAULT_DOCTORS);
-  const [featuredServices, setFeaturedServices] = useState(DEFAULT_SERVICES);
+  const [featuredServices, setFeaturedServices] = useState(DEFAULT_SERVICES.slice(0, 6));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -148,6 +246,17 @@ export default function HomePage() {
                 </Link>
               </div>
 
+              {/* 100% Hospital Sterility - Positioned on Left Side Away From Carousel */}
+              <div className="hero-sterility-left-card">
+                <div className="sterility-icon-box">
+                  <Shield size={18} />
+                </div>
+                <div>
+                  <div className="sterility-title">100% Hospital Sterility</div>
+                  <div className="sterility-sub">Class-B Autoclave & UV Sanitized Protocol</div>
+                </div>
+              </div>
+
               <div className="hero-stats-ribbon">
                 <div className="stat-item">
                   <h4>12+</h4>
@@ -165,38 +274,14 @@ export default function HomePage() {
             </div>
 
             <div className="hero-image-wrapper">
-              <img
-                src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=1000"
-                alt="Akansha Dental Clinic Modern Operatory"
-                className="hero-img-main"
-                loading="eager"
-              />
-              <div className="hero-float-card">
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: 'var(--radius-full)',
-                  backgroundColor: 'var(--color-accent-soft)',
-                  color: 'var(--color-accent-hover)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800
-                }}>
-                  <Shield size={22} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-primary)' }}>100% Hospital Sterility</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Class-B Autoclave & UV Sanitized</div>
-                </div>
-              </div>
+              <HeroFeatureCarousel />
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. Clinic Values & Overview */}
-      <section className="section-padding bg-subtle">
+      {/* 2. Clinic Values & Overview (Optimized Spacing) */}
+      <section className="section-padding bg-subtle" style={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
         <div className="container">
           <div className="section-header">
             <span className="section-tag">Clinical Excellence</span>
@@ -240,46 +325,83 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. Featured Dental Services */}
-      <section className="section-padding">
+      {/* 3. Featured Dental Services (Optimized Compact Spacing) */}
+      <section className="section-padding" style={{ backgroundColor: '#FAFBFB', paddingTop: '2.25rem', paddingBottom: '2.25rem' }}>
         <div className="container">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <span className="section-tag">Comprehensive Care</span>
               <h2 className="section-title" style={{ marginBottom: 0 }}>Specialized Treatments</h2>
             </div>
-            <Link to="/services" className="btn btn-outline">
-              View All Treatments
-              <ArrowRight size={16} />
+            <Link to="/services" className="btn-view-all-green" title="Explore all dental treatments">
+              <span>View All Treatments</span>
+              <ArrowRight size={17} />
             </Link>
           </div>
 
           <div className="grid-3">
-            {featuredServices.map((service) => (
-              <div key={service.id} className="card service-card">
-                <div>
-                  <div className="service-category-tag">{service.category}</div>
-                  <h3 className="service-card-title">{service.name}</h3>
-                  <p style={{ fontSize: '0.875rem', lineHeight: 1.6 }}>{service.description}</p>
+            {featuredServices.map((service, index) => (
+              <div
+                key={service.id}
+                className="service-image-card"
+                style={{
+                  backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.93), rgba(255, 255, 255, 0.97)), url(${service.imageUrl || 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800'})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
+              >
+                <div className="service-card-media">
+                  <img
+                    src={service.imageUrl || 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800'}
+                    alt={service.name}
+                    className="service-card-img"
+                    loading="lazy"
+                  />
                 </div>
-
-                <div className="service-price-tag">
-                  <div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>Starting from</span>
-                    <span>₹{service.price?.toLocaleString('en-IN')}</span>
+                <div className="service-card-body">
+                  <div className="service-card-num">
+                    {String(index + 1).padStart(2, '0')}
                   </div>
-                  <Link to="/book-appointment" className="btn btn-primary btn-sm">
-                    Book Slot
-                  </Link>
+                  <h3 className="service-card-title">{service.name}</h3>
+                  <p className="service-card-desc">{service.description}</p>
+                  <div className="service-card-footer">
+                    <div className="service-price-block">
+                      <span className="service-price-label">STARTS FROM*</span>
+                      <span className="service-price-value">
+                        ₹{service.price?.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <Link
+                      to={`/book-appointment?serviceId=${service.id}`}
+                      className="btn-book-treatment"
+                      title={`Book ${service.name} appointment`}
+                    >
+                      <Calendar size={15} />
+                      <span>Book Appointment</span>
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+
+          <div style={{ marginTop: '1.75rem', textAlign: 'center' }}>
+            <Link
+              to="/services"
+              className="btn-view-all-green"
+              style={{ padding: '0.8rem 2rem', fontSize: '0.96rem' }}
+              title="View all 12 specialized dental treatments"
+            >
+              <span>Explore All 12 Dental Specializations</span>
+              <ArrowRight size={18} />
+            </Link>
           </div>
         </div>
       </section>
 
       {/* 4. Specialist Doctors Showcase */}
-      <section className="section-padding bg-subtle">
+      <section className="section-padding bg-subtle" style={{ paddingTop: '2.25rem', paddingBottom: '2.5rem' }}>
         <div className="container">
           <div className="section-header">
             <span className="section-tag">Medical Team</span>
@@ -311,7 +433,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+          <div style={{ textAlign: 'center', marginTop: '1.75rem' }}>
             <Link to="/doctors" className="btn btn-outline">
               View Doctor Schedules & Qualifications
               <ArrowRight size={16} />
@@ -321,7 +443,7 @@ export default function HomePage() {
       </section>
 
       {/* 5. Patient Testimonials */}
-      <section className="section-padding">
+      <section className="section-padding" style={{ paddingTop: '2.25rem', paddingBottom: '2.5rem' }}>
         <div className="container">
           <div className="section-header">
             <span className="section-tag">Patient Experiences</span>
@@ -388,12 +510,12 @@ export default function HomePage() {
       </section>
 
       {/* 6. CTA Appointment Banner */}
-      <section style={{ backgroundColor: 'var(--color-primary)', color: '#fff', padding: '5rem 0' }}>
+      <section style={{ backgroundColor: 'var(--color-primary)', color: '#fff', padding: '3.25rem 0' }}>
         <div className="container" style={{ textAlign: 'center', maxWidth: '780px' }}>
-          <h2 style={{ color: '#fff', fontSize: '2.5rem', marginBottom: '1.25rem' }}>
+          <h2 style={{ color: '#fff', fontSize: '2.5rem', marginBottom: '1rem' }}>
             Ready for a Healthy, Radiant Smile?
           </h2>
-          <p style={{ color: '#CBD5E1', fontSize: '1.125rem', marginBottom: '2.5rem', lineHeight: 1.6 }}>
+          <p style={{ color: '#CBD5E1', fontSize: '1.125rem', marginBottom: '1.75rem', lineHeight: 1.6 }}>
             Reserve your consultation with our dental specialists. Real-time slot availability, instant confirmation, and personalized oral care.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
@@ -410,7 +532,7 @@ export default function HomePage() {
       </section>
 
       {/* 7. Contact Details & Google Maps */}
-      <section className="section-padding bg-subtle">
+      <section className="section-padding bg-subtle" style={{ paddingTop: '2.25rem', paddingBottom: '2.75rem' }}>
         <div className="container">
           <div className="section-header">
             <span className="section-tag">Convenient Location</span>

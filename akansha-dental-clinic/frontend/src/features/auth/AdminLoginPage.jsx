@@ -1,9 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldCheck, Lock, Mail, Eye, EyeOff, AlertCircle, ArrowLeft, KeyRound, UserCheck } from 'lucide-react';
-import Button from '../../components/Button';
+import { 
+  ShieldCheck, 
+  Lock, 
+  Mail, 
+  Eye, 
+  EyeOff, 
+  AlertCircle, 
+  ArrowLeft, 
+  KeyRound, 
+  UserCheck,
+  CalendarCheck,
+  Activity,
+  Sparkles,
+  LockKeyhole
+} from 'lucide-react';
 import Spinner from '../../components/Spinner';
+import DentalLogo from '../../components/DentalLogo';
 
 export const AdminLoginPage = () => {
   const [username, setUsername] = useState('');
@@ -45,279 +59,296 @@ export const AdminLoginPage = () => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#F8FAFC',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 'var(--spacing-lg)',
-      backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(0, 212, 178, 0.05) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(10, 37, 64, 0.06) 0%, transparent 40%)'
-    }}>
-      <div style={{
-        maxWidth: '440px',
-        width: '100%',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 'var(--radius-xl)',
-        boxShadow: '0 20px 25px -5px rgba(10, 37, 64, 0.08), 0 8px 10px -6px rgba(10, 37, 64, 0.04)',
-        padding: 'var(--spacing-2xl)',
-        border: '1px solid #E2E8F0',
-      }}>
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-xl)' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '56px',
-            height: '56px',
-            borderRadius: '16px',
-            backgroundColor: 'var(--color-navy)',
-            color: 'var(--color-teal)',
-            marginBottom: 'var(--spacing-md)',
-            boxShadow: '0 4px 12px rgba(10, 37, 64, 0.15)'
-          }}>
-            <ShieldCheck size={32} />
+    <div className="admin-auth-wrapper">
+      {/* =========================================
+          LEFT PANEL: Modern Clinical Showcase
+         ========================================= */}
+      <div className="admin-showcase-panel">
+        <div className="admin-showcase-glow-1"></div>
+        <div className="admin-showcase-glow-2"></div>
+        <div className="admin-grid-pattern"></div>
+
+        {/* Top Branding Pill */}
+        <div className="admin-showcase-top">
+          <div className="admin-brand-pill">
+            <DentalLogo size={22} light={true} />
+            <span className="admin-brand-pill-text">Akansha Dental Clinic &amp; Implant Center</span>
+            <span className="admin-brand-pill-badge">CLINICAL OS</span>
           </div>
-          <h1 style={{
-            fontSize: '1.6rem',
-            fontWeight: 700,
-            color: 'var(--color-navy-dark)',
-            letterSpacing: '-0.02em',
-            marginBottom: '6px'
-          }}>
-            Clinical Portal Login
-          </h1>
-          <p style={{ fontSize: '0.88rem', color: 'var(--color-navy-light)' }}>
-            Akansha Dental Clinic Management System
-          </p>
+          <div style={{ fontSize: '0.82rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>🏥 Minal Residency, Bhopal</span>
+            <span>•</span>
+            <span style={{ color: '#00D4B2' }}>NABH &amp; ISO 9001:2015 Certified Practice</span>
+          </div>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 'var(--spacing-sm)',
-            padding: 'var(--spacing-md)',
-            backgroundColor: '#FEF2F2',
-            border: '1px solid #FCA5A5',
-            borderRadius: 'var(--radius-md)',
-            color: '#991B1B',
-            fontSize: '0.88rem',
-            marginBottom: 'var(--spacing-lg)',
-            lineHeight: 1.4
-          }}>
-            <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <span>{error}</span>
+        {/* Center Main Presentation */}
+        <div className="admin-showcase-center">
+          <div className="admin-status-indicator">
+            <span className="admin-status-dot"></span>
+            <span>Intelligent Operatory &amp; Healthcare Station</span>
           </div>
-        )}
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 'var(--spacing-md)' }}>
-            <label style={{
-              display: 'block',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              color: 'var(--color-navy-dark)',
-              marginBottom: '6px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em'
+          <h1 className="admin-showcase-title">
+            Advanced Dental Clinical &amp; <span>Management Workstation</span>
+          </h1>
+
+          <p className="admin-showcase-desc">
+            Unified digital command center for dentists, prosthodontists, dental hygienists, 
+            and front-desk administration to coordinate patient care, appointments, 3D imaging, and operatory workflows.
+          </p>
+
+          {/* 4 Feature Cards */}
+          <div className="admin-features-grid">
+            <div className="admin-feature-card">
+              <div className="admin-feature-icon">
+                <CalendarCheck size={20} />
+              </div>
+              <h3 className="admin-feature-title">Smart Operatory Rosters</h3>
+              <p className="admin-feature-desc">
+                Multi-doctor chair allocation, real-time token queues, and walk-in scheduling.
+              </p>
+            </div>
+
+            <div className="admin-feature-card">
+              <div className="admin-feature-icon" style={{ background: 'rgba(52, 211, 153, 0.12)', color: '#34D399' }}>
+                <Activity size={20} />
+              </div>
+              <h3 className="admin-feature-title">Digital EHR &amp; 3D Imaging</h3>
+              <p className="admin-feature-desc">
+                Direct optical scan archives, periodontal charts, and chronological treatment history.
+              </p>
+            </div>
+
+            <div className="admin-feature-card">
+              <div className="admin-feature-icon" style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38BDF8' }}>
+                <ShieldCheck size={20} />
+              </div>
+              <h3 className="admin-feature-title">100% Hospital Sterility</h3>
+              <p className="admin-feature-desc">
+                Class-B autoclave batch validation, UV chamber timers, and bio-waste tracking.
+              </p>
+            </div>
+
+            <div className="admin-feature-card">
+              <div className="admin-feature-icon" style={{ background: 'rgba(251, 191, 36, 0.12)', color: '#FBBF24' }}>
+                <Sparkles size={20} />
+              </div>
+              <h3 className="admin-feature-title">Automated Billing &amp; Plans</h3>
+              <p className="admin-feature-desc">
+                Itemized dental procedure estimates, GST invoicing, and doctor payout reconciliation.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Trust & Security Strip */}
+        <div className="admin-showcase-bottom">
+          <div className="admin-stats-strip">
+            <div className="admin-stat-item">
+              <h5>15,000+</h5>
+              <p>Patients Restored</p>
+            </div>
+            <div className="admin-stat-item">
+              <h5>99.4%</h5>
+              <p>Clinical Satisfaction</p>
+            </div>
+            <div className="admin-stat-item">
+              <h5>12+ Years</h5>
+              <p>Clinical Mastery</p>
+            </div>
+          </div>
+
+          <div style={{ fontSize: '0.74rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <LockKeyhole size={14} color="#00D4B2" />
+            <span>DISHA &amp; HIPAA Compliant Security</span>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================
+          RIGHT PANEL: Authentication Console
+         ========================================= */}
+      <div className="admin-auth-console">
+        {/* Top Navigation */}
+        <div className="admin-auth-top-nav">
+          <Link to="/" className="admin-back-btn">
+            <ArrowLeft size={15} />
+            <span>Return to Clinic Website</span>
+          </Link>
+        </div>
+
+        {/* Login Card */}
+        <div className="admin-login-card">
+          <div className="admin-login-header">
+            <div className="admin-logo-circle">
+              <DentalLogo size={32} light={true} />
+            </div>
+            <h2 className="admin-login-title">Clinical Portal Login</h2>
+            <p className="admin-login-subtitle">
+              Akansha Dental Clinic Management System
+            </p>
+            <div>
+              <span className="admin-roles-tag">
+                👨‍⚕️ Doctors • 👩‍💼 Staff • 🛡️ Admin
+              </span>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              padding: '12px 14px',
+              backgroundColor: '#FEF2F2',
+              border: '1px solid #FCA5A5',
+              borderRadius: '10px',
+              color: '#991B1B',
+              fontSize: '0.86rem',
+              marginBottom: '1.25rem',
+              lineHeight: 1.4
             }}>
-              Username or Email
-            </label>
-            <div style={{ position: 'relative' }}>
-              <div style={{
-                position: 'absolute',
-                left: '14px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#94A3B8'
-              }}>
-                <Mail size={18} />
-              </div>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin@akanshadental.com"
-                required
-                autoFocus
-                style={{
-                  width: '100%',
-                  padding: '12px 14px 12px 42px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1.5px solid #CBD5E1',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  boxSizing: 'border-box'
-                }}
-              />
+              <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <span>{error}</span>
             </div>
-          </div>
+          )}
 
-          <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <label style={{
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                color: 'var(--color-navy-dark)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em'
-              }}>
-                Password
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
+            <div className="admin-form-group">
+              <label className="admin-form-label">
+                Username or Email
               </label>
-            </div>
-            <div style={{ position: 'relative' }}>
-              <div style={{
-                position: 'absolute',
-                left: '14px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#94A3B8'
-              }}>
-                <Lock size={18} />
+              <div className="admin-input-wrapper">
+                <div className="admin-input-icon">
+                  <Mail size={18} />
+                </div>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="admin@akanshadental.com"
+                  required
+                  autoFocus
+                  className="admin-input-field"
+                />
               </div>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                required
-                style={{
-                  width: '100%',
-                  padding: '12px 42px 12px 42px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1.5px solid #CBD5E1',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  boxSizing: 'border-box'
-                }}
-              />
+            </div>
+
+            <div className="admin-form-group" style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label className="admin-form-label" style={{ marginBottom: 0 }}>
+                  Password
+                </label>
+                <span style={{ fontSize: '0.74rem', color: '#64748B' }}>
+                  Secure SSL
+                </span>
+              </div>
+              <div className="admin-input-wrapper">
+                <div className="admin-input-icon">
+                  <Lock size={18} />
+                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  required
+                  className="admin-input-field"
+                  style={{ paddingRight: '42px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="admin-pwd-toggle"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="admin-submit-btn"
+            >
+              {isSubmitting ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Spinner size="sm" color="#0A2540" />
+                  <span>Authenticating Station...</span>
+                </span>
+              ) : (
+                <>
+                  <span>Sign In to Clinical Portal</span>
+                  <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>→</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Quick Demo Credentials */}
+          <div className="admin-demo-section">
+            <div className="admin-demo-label">
+              <span>⚡ Quick Demo Credentials</span>
+              <span style={{ fontSize: '0.7rem', color: '#00BA9C', fontWeight: 600 }}>1-Click Fill</span>
+            </div>
+            <div className="admin-demo-grid">
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#94A3B8',
-                  padding: '4px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-                title={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => fillQuickCredentials('admin@akanshadental.com', 'password123')}
+                className="admin-demo-card"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: 'rgba(0, 212, 178, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <KeyRound size={16} color="#00BA9C" />
+                </div>
+                <div>
+                  <div className="admin-demo-card-title">Super Admin</div>
+                  <span className="admin-demo-card-sub">Full Clinical Control</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fillQuickCredentials('rohan@akanshadental.com', 'password123')}
+                className="admin-demo-card"
+              >
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: 'rgba(10, 37, 64, 0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <UserCheck size={16} color="#0A2540" />
+                </div>
+                <div>
+                  <div className="admin-demo-card-title">Staff Desk</div>
+                  <span className="admin-demo-card-sub">OPD &amp; Reception</span>
+                </div>
               </button>
             </div>
           </div>
 
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            disabled={isSubmitting}
-            style={{ width: '100%', justifyContent: 'center' }}
-          >
-            {isSubmitting ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Spinner size="sm" color="#0A2540" />
-                <span>Authenticating...</span>
-              </span>
-            ) : (
-              'Sign In to Clinical Portal'
-            )}
-          </Button>
-        </form>
-
-        {/* Demo Fast Login Helpers */}
-        <div style={{
-          marginTop: 'var(--spacing-xl)',
-          paddingTop: 'var(--spacing-lg)',
-          borderTop: '1px solid #E2E8F0'
-        }}>
-          <p style={{
-            fontSize: '0.78rem',
-            fontWeight: 600,
-            color: '#64748B',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            marginBottom: 'var(--spacing-sm)',
-            textAlign: 'center'
-          }}>
-            Quick Demo Credentials
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button
-              type="button"
-              onClick={() => fillQuickCredentials('admin@akanshadental.com', 'password123')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 10px',
-                backgroundColor: '#F1F5F9',
-                border: '1px solid #E2E8F0',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                color: 'var(--color-navy)',
-                cursor: 'pointer',
-                textAlign: 'left'
-              }}
-            >
-              <KeyRound size={14} color="#00D4B2" />
-              <span>Super Admin</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => fillQuickCredentials('rohan@akanshadental.com', 'password123')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 10px',
-                backgroundColor: '#F1F5F9',
-                border: '1px solid #E2E8F0',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                color: 'var(--color-navy)',
-                cursor: 'pointer',
-                textAlign: 'left'
-              }}
-            >
-              <UserCheck size={14} color="#0A2540" />
-              <span>Staff Desk</span>
-            </button>
+          {/* Security Footer Note */}
+          <div className="admin-security-footer">
+            <ShieldCheck size={14} color="#00BA9C" />
+            <span>256-Bit SSL Encrypted Healthcare Portal</span>
           </div>
-        </div>
-
-        {/* Back Link */}
-        <div style={{ textAlign: 'center', marginTop: 'var(--spacing-lg)' }}>
-          <Link
-            to="/"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.85rem',
-              color: 'var(--color-navy-light)',
-              textDecoration: 'none',
-              fontWeight: 500
-            }}
-          >
-            <ArrowLeft size={14} /> Back to Public Website
-          </Link>
         </div>
       </div>
     </div>

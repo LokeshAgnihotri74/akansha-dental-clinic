@@ -7,67 +7,111 @@ import Spinner from '../../components/Spinner';
 const DEFAULT_SERVICES = [
   {
     id: 1,
-    name: 'Precision Dental Implants',
+    name: 'Dental Implants',
     category: 'IMPLANTOLOGY',
-    price: 15000,
+    price: 32990,
     durationMinutes: 90,
-    description: 'Titanium root replacement restoring natural chewing strength and lifetime aesthetics with osseointegration.'
+    description: 'Same-day implants with surgical precision restoring natural chewing strength and lifetime aesthetics with osseointegration.',
+    imageUrl: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 2,
-    name: 'Microscopic Root Canal Therapy',
-    category: 'ENDODONTICS',
-    price: 2700,
-    durationMinutes: 60,
-    description: 'Painless, single-sitting pulp disinfection and biological 3D root filling under dental operating magnification.'
+    name: 'Clear Aligners & Braces',
+    category: 'ORTHODONTICS',
+    price: 7000,
+    durationMinutes: 45,
+    description: 'Discreet and comfortable orthodontic alignment correcting crowding and malocclusion with 3D digital planning.',
+    imageUrl: 'https://images.unsplash.com/photo-1609840114035-3c981b782dfe?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 3,
-    name: 'Clear Aligners & Invisible Braces',
-    category: 'ORTHODONTICS',
-    price: 27000,
-    durationMinutes: 45,
-    description: 'Customized transparent aligners correcting crowding and malocclusion discreetly with 3D digital planning.'
+    name: 'Preventive Dentistry',
+    category: 'PREVENTIVE',
+    price: 1499,
+    durationMinutes: 30,
+    description: 'Fluoride varnish, pit & fissure sealants, and gentle dental checkups for ages 0-13 & adults.',
+    imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 4,
-    name: 'Ultrasonic Scaling & Deep Polishing',
-    category: 'PREVENTIVE',
-    price: 900,
-    durationMinutes: 30,
-    description: 'Gentle calculus removal, plaque eradication, and enamel polishing for vibrant gums and fresh breath.'
+    name: 'Root Canal Treatment',
+    category: 'ENDODONTICS',
+    price: 2700,
+    durationMinutes: 60,
+    description: 'Painless, single-sitting pulp disinfection and biological 3D root filling under dental operating magnification.',
+    imageUrl: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 5,
-    name: 'Laser Teeth Whitening',
+    name: 'Cosmetic Dentistry',
     category: 'COSMETIC',
     price: 4200,
     durationMinutes: 45,
-    description: 'In-office photo-activated whitening brightening shades safely in 45 minutes with zero sensitivity.'
+    description: 'Smile makeover, aesthetic porcelain veneers, and photo-activated enamel whitening with zero sensitivity.',
+    imageUrl: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 6,
-    name: 'Zirconia Aesthetic Crowns',
-    category: 'PROSTHODONTICS',
-    price: 5400,
-    durationMinutes: 60,
-    description: 'Cad-Cam precision milled metal-free crowns providing lifelike translucency and fracture resistance.'
+    name: 'Teeth Cleaning & Scaling',
+    category: 'PREVENTIVE',
+    price: 900,
+    durationMinutes: 30,
+    description: 'Gentle ultrasonic calculus removal, plaque eradication, and enamel polishing for vibrant gums and fresh breath.',
+    imageUrl: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 7,
-    name: 'Pediatric Dental Sealants & Fluoride',
-    category: 'PEDIATRIC',
-    price: 1200,
-    durationMinutes: 30,
-    description: 'Child-friendly preventative coatings shielding developing molars against cavities and acid erosion.'
+    name: 'Dental Fillings',
+    category: 'RESTORATIVE',
+    price: 1500,
+    durationMinutes: 40,
+    description: 'Seamless tooth-colored composite restorations repairing cavities with natural shade matching and durability.',
+    imageUrl: 'https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 8,
-    name: 'Wisdom Tooth Surgical Extraction',
-    category: 'SURGERY',
-    price: 3600,
+    name: 'Dental Bridges & Crowns',
+    category: 'PROSTHODONTICS',
+    price: 5400,
+    durationMinutes: 60,
+    description: 'Fixed precision-crafted prosthetic restorations bridging gaps left by one or more missing teeth.',
+    imageUrl: 'https://images.unsplash.com/photo-1598256989800-fe5f95da9787?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 9,
+    name: 'Painless Tooth Removal',
+    category: 'ORAL SURGERY',
+    price: 1200,
     durationMinutes: 45,
-    description: 'Atraumatic impaction removal performed under localized numbness with rapid tissue recovery.'
+    description: 'Atraumatic simple and surgical extractions performed under localized pain-free anesthesia with rapid recovery.',
+    imageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 10,
+    name: 'Pediatric Dentistry',
+    category: 'PEDIATRIC',
+    price: 1000,
+    durationMinutes: 30,
+    description: 'Child-friendly preventative coatings, sealants, and gentle dental checkups in an anxiety-free setting.',
+    imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 11,
+    name: 'Advanced Laser Treatment',
+    category: 'ADVANCED TECH',
+    price: 3500,
+    durationMinutes: 45,
+    description: 'Minimally invasive laser soft-tissue contouring, gum healing, and painless bacterial disinfection.',
+    imageUrl: 'https://images.unsplash.com/photo-1629909615184-74f495363b67?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 12,
+    name: 'Digital 3D Oral Scanning',
+    category: '3D DIAGNOSTICS',
+    price: 1500,
+    durationMinutes: 20,
+    description: 'Optical 3D intraoral impressions replacing messy traditional putty molds with sub-millimeter precision.',
+    imageUrl: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=800'
   }
 ];
 
@@ -142,38 +186,73 @@ export default function ServicesPage() {
             <Spinner message="Loading dental treatments..." />
           ) : (
             <div className="grid-3">
-              {filteredServices.map((service) => (
-                <div key={service.id} className="card service-card">
-                  <div>
-                    <span className="service-category-tag">{service.category}</span>
-                    <h3 className="service-card-title">{service.name}</h3>
-                    <p style={{ fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-                      {service.description}
-                    </p>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '1rem' }}>
-                      <Clock size={16} color="var(--color-accent-hover)" />
-                      <span>Estimated Duration: <strong>{service.durationMinutes} Minutes</strong></span>
-                    </div>
+              {filteredServices.map((service, index) => (
+                <div
+                  key={service.id}
+                  className="service-image-card"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.93), rgba(255, 255, 255, 0.97)), url(${service.imageUrl || 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800'})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                  }}
+                >
+                  <div className="service-card-media">
+                    <img
+                      src={service.imageUrl || 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=800'}
+                      alt={service.name}
+                      className="service-card-img"
+                      loading="lazy"
+                    />
                   </div>
+                  <div className="service-card-body">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                      <span className="service-card-num">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <span className="service-category-tag" style={{ margin: 0 }}>
+                        {service.category}
+                      </span>
+                    </div>
 
-                  <div>
-                    <div className="service-price-tag">
-                      <div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: 600 }}>Standard Cost</span>
-                        <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                    <h3 className="service-card-title">{service.name}</h3>
+                    <p className="service-card-desc">{service.description}</p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '1.25rem' }}>
+                      <Clock size={15} color="var(--color-accent-hover)" />
+                      <span>Duration: <strong>{service.durationMinutes} Minutes</strong></span>
+                    </div>
+
+                    <div className="service-card-footer">
+                      <div className="service-price-block">
+                        <span className="service-price-label">STARTS FROM*</span>
+                        <span className="service-price-value">
                           ₹{service.price?.toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <Link to={`/book-appointment?serviceId=${service.id}`} className="btn btn-primary btn-sm">
-                        <Calendar size={14} />
-                        Book
+                      <Link
+                        to={`/book-appointment?serviceId=${service.id}`}
+                        className="btn-book-treatment"
+                        title={`Book ${service.name} appointment`}
+                      >
+                        <Calendar size={15} />
+                        <span>Book Appointment</span>
                       </Link>
                     </div>
 
-                    <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                      <Link to={`/services/${service.id}`} style={{ fontSize: '0.85rem', color: 'var(--color-accent-hover)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                        Read Treatment Guide & FAQs
+                    <div style={{ marginTop: '0.85rem', textAlign: 'center' }}>
+                      <Link
+                        to={`/services/${service.id}`}
+                        style={{
+                          fontSize: '0.82rem',
+                          color: 'var(--color-accent-hover)',
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        <span>Treatment Guide & FAQs</span>
                         <ArrowRight size={14} />
                       </Link>
                     </div>

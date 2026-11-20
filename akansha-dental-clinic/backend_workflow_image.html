@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Akansha Dental Clinic - Complete Node.js + Express + MySQL Backend Workflow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1800px;
+    background: #061524;
+    color: #F1F5F9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Background Medical Grid & Ambient Glows */
+  .bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0, 212, 178, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 212, 178, 0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+  }
+  .glow-1 {
+    position: absolute;
+    top: -100px;
+    left: -100px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0, 212, 178, 0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(50px);
+    pointer-events: none;
+  }
+  .glow-2 {
+    position: absolute;
+    bottom: -100px;
+    right: -100px;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(14, 159, 110, 0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+  }
+  
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 1720px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, rgba(10, 37, 64, 0.85) 0%, rgba(15, 50, 85, 0.85) 100%);
+    border: 1px solid rgba(0, 212, 178, 0.3);
+    border-radius: 20px;
+    padding: 30px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+    margin-bottom: 30px;
+  }
+  .brand-area {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .logo-icon {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #00D4B2 0%, #0E9F6E 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0, 212, 178, 0.35);
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .header h1 span {
+    color: #00D4B2;
+  }
+  .header p {
+    font-size: 15px;
+    color: #94A3B8;
+  }
+  .tech-pills {
+    display: flex;
+    gap: 10px;
+  }
+  .tech-pill {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #E2E8F0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tech-pill.active {
+    background: rgba(0, 212, 178, 0.15);
+    border-color: #00D4B2;
+    color: #00D4B2;
+  }
+
+  /* Section Title */
+  .section-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #00D4B2;
+    margin-bottom: 12px;
+  }
+  .section-tag::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #00D4B2;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00D4B2;
+  }
+
+  /* 5-Tier Pipeline Layout */
+  .tiers-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 18px;
+    margin-bottom: 30px;
+  }
+  .tier-card {
+    background: rgba(10, 37, 64, 0.65);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 22px;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+  .tier-card.highlight {
+    border-color: rgba(0, 212, 178, 0.4);
+    background: linear-gradient(180deg, rgba(10, 37, 64, 0.8) 0%, rgba(12, 45, 78, 0.8) 100%);
+  }
+  .tier-num {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748B;
+    background: rgba(255,255,255,0.06);
+    padding: 3px 8px;
+    border-radius: 12px;
+  }
+  .tier-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tier-item {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .tier-item strong {
+    color: #38BDF8;
+    display: block;
+    margin-bottom: 2px;
+    font-size: 13px;
+  }
+  .tier-item p {
+    color: #94A3B8;
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+  .tier-badge-green {
+    color: #34D399;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  /* Two Columns for Detailed Workflows & Database */
+  .main-split {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 22px;
+    margin-bottom: 30px;
+  }
+
+  /* Workflows Panel */
+  .workflows-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .workflow-box {
+    background: rgba(10, 37, 64, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+  .workflow-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 10px;
+  }
+  .workflow-header h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .step-chips {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .step-chip {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+    position: relative;
+  }
+  .step-chip-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #00D4B2;
+    color: #0A2540;
+    font-size: 11px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+  }
+  .step-chip h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #E2E8F0;
+    margin-bottom: 4px;
+  }
+  .step-chip p {
+    font-size: 11.5px;
+    color: #94A3B8;
+    line-height: 1.4;
+  }
+
+  /* Database Panel */
+  .db-container {
+    background: rgba(10, 37, 64, 0.7);
+    border: 1px solid rgba(0, 212, 178, 0.3);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .db-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .table-card {
+    background: rgba(6, 21, 36, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .table-card-head {
+    font-size: 13px;
+    font-weight: 800;
+    color: #00D4B2;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding-bottom: 4px;
+  }
+  .table-col-list {
+    list-style: none;
+    font-size: 11px;
+    color: #94A3B8;
+    line-height: 1.45;
+  }
+  .table-col-list li span.pk { color: #F59E0B; font-weight: 700; }
+  .table-col-list li span.fk { color: #38BDF8; font-weight: 700; }
+  .table-col-list li span.uk { color: #34D399; font-weight: 700; }
+
+  /* Bottom API Routes Matrix */
+  .api-matrix-box {
+    background: rgba(10, 37, 64, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+  .api-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .api-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .api-method {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    margin-right: 6px;
+  }
+  .method-get { background: rgba(56, 189, 248, 0.18); color: #38BDF8; }
+  .method-post { background: rgba(52, 211, 153, 0.18); color: #34D399; }
+  .method-patch { background: rgba(251, 191, 36, 0.18); color: #FBBF24; }
+  .method-delete { background: rgba(239, 68, 68, 0.18); color: #F87171; }
+  .api-endpoint {
+    font-size: 12px;
+    font-weight: 700;
+    color: #F8FAFC;
+    font-family: monospace;
+  }
+  .api-desc {
+    font-size: 11px;
+    color: #94A3B8;
+    margin-top: 4px;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 25px;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #64748B;
+    font-size: 12px;
+  }
+  .footer span.brand { color: #00D4B2; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="glow-1"></div>
+<div class="glow-2"></div>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="brand-area">
+      <div class="logo-icon">
+        <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+          <path d="M14 6C11 6 8 8 7 12C6 16 7 21 8 26C9 30 11 34 14 34C16.5 34 18 31 20 31C22 31 23.5 34 26 34C29 34 31 30 32 26C33 21 34 16 33 12C32 8 29 6 26 6C23 6 21 9 20 9C19 9 17 6 14 6Z" stroke="#061524" stroke-width="2.5" fill="#FFFFFF"/>
+          <line x1="12" y1="28" x2="28" y2="12" stroke="#0E9F6E" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="28" cy="12" r="3" fill="#061524"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Akansha Dental Clinic — <span>Complete Backend Workflow</span></h1>
+        <p>Production Architecture Blueprint: Node.js 24.x + Express.js + MySQL 8.x + JWT RBAC Security</p>
+      </div>
+    </div>
+    <div class="tech-pills">
+      <div class="tech-pill active">⚡ Node.js :8080</div>
+      <div class="tech-pill active">🐬 MySQL 8.x :3306</div>
+      <div class="tech-pill">⚛️ React Vite :5173</div>
+      <div class="tech-pill">🔒 JWT Bearer</div>
+      <div class="tech-pill">🛡️ 100% Hospital Sterility</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: 5-Tier Request Pipeline -->
+  <div class="section-tag">Tiered System Execution Architecture</div>
+  <div class="tiers-grid">
+    <!-- Tier 1 -->
+    <div class="tier-card">
+      <div class="tier-num">TIER 1</div>
+      <div class="tier-title">💻 Client Tier</div>
+      <div class="tier-item">
+        <strong>Public Portal (:5173)</strong>
+        <p>Home, Doctors, Services, and Online Appointment Booking form.</p>
+      </div>
+      <div class="tier-item">
+        <strong>Admin Console (:5173/admin)</strong>
+        <p>Doctor roster, OPD queues, patient charts, and treatment master.</p>
+      </div>
+      <div class="tier-item">
+        <strong>Axios API Client</strong>
+        <p>Auto-injects <code>Bearer &lt;token&gt;</code> and handles 401 session expiry.</p>
+      </div>
+    </div>
+
+    <!-- Tier 2 -->
+    <div class="tier-card">
+      <div class="tier-num">TIER 2</div>
+      <div class="tier-title">🚪 Gateway &amp; Middleware</div>
+      <div class="tier-item">
+        <strong>Vite Reverse Proxy</strong>
+        <p>Forwards <code>:5173/api/*</code> directly to backend <code>:8080/api/*</code>.</p>
+      </div>
+      <div class="tier-item">
+        <strong>CORS &amp; Body Parsers</strong>
+        <p>Whitelists origins, parses JSON payloads &amp; URL encoded streams.</p>
+      </div>
+      <div class="tier-item">
+        <strong>JWT &amp; RBAC Guard</strong>
+        <p>Enforces roles: <code>SUPER_ADMIN</code>, <code>ADMIN</code>, and <code>STAFF</code>.</p>
+      </div>
+    </div>
+
+    <!-- Tier 3 -->
+    <div class="tier-card highlight">
+      <div class="tier-num">TIER 3</div>
+      <div class="tier-title">🌐 REST API Routers</div>
+      <div class="tier-item">
+        <strong>/api/v1/appointments</strong>
+        <p>Slots, book, list, details, status transitions.</p>
+      </div>
+      <div class="tier-item">
+        <strong>/api/v1/auth</strong>
+        <p>Login, /me profile, and session revocation.</p>
+      </div>
+      <div class="tier-item">
+        <strong>/api/v1/doctors &amp; services</strong>
+        <p>Public catalogs &amp; administrative CRUD actions.</p>
+      </div>
+      <div class="tier-item">
+        <strong>/api/v1/dashboard &amp; inquiries</strong>
+        <p>Real-time KPI stats &amp; patient contact leads.</p>
+      </div>
+    </div>
+
+    <!-- Tier 4 -->
+    <div class="tier-card highlight">
+      <div class="tier-num">TIER 4</div>
+      <div class="tier-title">⚙️ Business Controllers</div>
+      <div class="tier-item">
+        <strong>Slot Availability Engine</strong>
+        <p>Calculates dynamic 30-min intervals, eliminates booked &amp; past slots.</p>
+      </div>
+      <div class="tier-item">
+        <strong>Price Calculator</strong>
+        <p>Any Doctor (₹0) + General Checkup (₹399) = ₹399 total default.</p>
+      </div>
+      <div class="tier-item">
+        <strong>Patient Phone Matcher</strong>
+        <p>Matches 10-digit Indian mobile numbers; creates or links patient ID.</p>
+      </div>
+      <div class="tier-item">
+        <strong>Audit Trail Logger</strong>
+        <p>Records all appointment status changes with actor &amp; timestamp.</p>
+      </div>
+    </div>
+
+    <!-- Tier 5 -->
+    <div class="tier-card">
+      <div class="tier-num">TIER 5</div>
+      <div class="tier-title">🐬 Persistence Tier</div>
+      <div class="tier-item">
+        <strong>mysql2 Connection Pool</strong>
+        <p>10 concurrent connections with queue limit and auto-reconnect.</p>
+      </div>
+      <div class="tier-item">
+        <strong>akansha_dental_db</strong>
+        <p>10 normalized relational tables with foreign keys and unique locks.</p>
+      </div>
+      <div class="tier-item">
+        <strong>Standby In-Memory Fallback</strong>
+        <p>Safe mock layer keeps APIs running smoothly if MySQL is offline.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Detailed Live Workflows & Database -->
+  <div class="main-split">
+    <!-- Workflows (Left) -->
+    <div class="workflows-container">
+      <!-- Workflow 1 -->
+      <div class="workflow-box">
+        <div class="workflow-header">
+          <h3><span>📅</span> Workflow 1: Public Online Appointment Booking Flow</h3>
+          <span class="tier-badge-green">● END-TO-END PATIENT WORKFLOW</span>
+        </div>
+        <div class="step-chips">
+          <div class="step-chip">
+            <div class="step-chip-num">1</div>
+            <h4>Default Selections</h4>
+            <p>UI sets Doctor = "Any Available Doctor" (₹0 fee) &amp; Treatment = "General Checkup" (₹399).</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">2</div>
+            <h4>Dynamic Slot Fetch</h4>
+            <p>Calls <code>/available-slots</code>. Engine excludes booked slots &amp; filters past same-day hours.</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">3</div>
+            <h4>10-Digit Phone Check</h4>
+            <p>Validates 10-digit Indian format (<code>/^[6-9]\d{9}$/</code>). Rejects invalid contact entries.</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">4</div>
+            <h4>Patient Record Match</h4>
+            <p>Looks up phone in <code>patients</code> table. If found reuses patient ID; if new, registers record.</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">5</div>
+            <h4>Atomic Slot Lock</h4>
+            <p>Inserts appointment with status <code>PENDING</code> and auto-generates <code>APT-2026-XXXX</code>.</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">6</div>
+            <h4>Audit &amp; Response</h4>
+            <p>Logs to <code>appointment_status_history</code> and returns HTTP 201 with confirmation summary.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workflow 2 & 3 Combined -->
+      <div class="workflow-box">
+        <div class="workflow-header">
+          <h3><span>🔒</span> Workflow 2: Clinical Admin JWT Authentication &amp; Status Workflow</h3>
+          <span class="tier-badge-green">● RBAC PROTOCOL</span>
+        </div>
+        <div class="step-chips">
+          <div class="step-chip">
+            <div class="step-chip-num">A</div>
+            <h4>1-Click Credentials</h4>
+            <p>Admin enters credentials or clicks demo pills (Super Admin / Staff Desk).</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">B</div>
+            <h4>BCrypt Verification</h4>
+            <p>Backend compares plain password against salted BCrypt hash in <code>admins</code> table.</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">C</div>
+            <h4>JWT Token Generation</h4>
+            <p>Signs token with claims <code>{ id, username, role }</code>; expires in 24 hours.</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">D</div>
+            <h4>Protected Desk Action</h4>
+            <p>Doctor clicks "Confirm". JWT filter verifies Bearer header &amp; populates <code>req.user</code>.</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">E</div>
+            <h4>Status Transition</h4>
+            <p>Transitions <code>PENDING</code> &rarr; <code>CONFIRMED</code> &rarr; <code>COMPLETED</code> / <code>CANCELLED</code>.</p>
+          </div>
+          <div class="step-chip">
+            <div class="step-chip-num">F</div>
+            <h4>Live Dashboard Sync</h4>
+            <p>Dashboard aggregates total OPD flow, revenue collected, and today's queue.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Database Schema (Right) -->
+    <div class="db-container">
+      <div>
+        <div class="section-tag" style="margin-bottom: 6px;">MySQL 8.x Normalized Data Schema</div>
+        <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin-bottom: 6px;">akansha_dental_db (10 Relational Tables)</h3>
+        <p style="font-size: 12px; color: #94A3B8; margin-bottom: 12px;">Full ACID transactions, foreign key cascades, and unique composite slot constraints.</p>
+
+        <div class="db-grid">
+          <div class="table-card">
+            <div class="table-card-head">
+              <span>appointments</span>
+              <span style="color:#64748B;">Core</span>
+            </div>
+            <ul class="table-col-list">
+              <li><span class="pk">PK</span> id (BIGINT)</li>
+              <li><span class="uk">UK</span> booking_reference</li>
+              <li><span class="fk">FK</span> patient_id &rarr; patients</li>
+              <li><span class="fk">FK</span> doctor_id (0=Any)</li>
+              <li><span class="fk">FK</span> service_id &rarr; services</li>
+              <li>appointment_date, time_slot</li>
+              <li>status (PENDING/CONFIRMED)</li>
+              <li>total_price (DECIMAL 10,2)</li>
+            </ul>
+          </div>
+
+          <div class="table-card">
+            <div class="table-card-head">
+              <span>patients</span>
+              <span style="color:#64748B;">Directory</span>
+            </div>
+            <ul class="table-col-list">
+              <li><span class="pk">PK</span> id (BIGINT)</li>
+              <li>full_name (VARCHAR 150)</li>
+              <li><span class="uk">UK</span> phone (10 Digits)</li>
+              <li>email, blood_group</li>
+              <li>medical_history (TEXT)</li>
+              <li>created_at (TIMESTAMP)</li>
+            </ul>
+          </div>
+
+          <div class="table-card">
+            <div class="table-card-head">
+              <span>doctors</span>
+              <span style="color:#64748B;">Roster</span>
+            </div>
+            <ul class="table-col-list">
+              <li><span class="pk">PK</span> id (BIGINT)</li>
+              <li>name, qualification</li>
+              <li>specialization</li>
+              <li>consultation_fee</li>
+              <li>is_active (BOOLEAN)</li>
+            </ul>
+          </div>
+
+          <div class="table-card">
+            <div class="table-card-head">
+              <span>services</span>
+              <span style="color:#64748B;">Catalog</span>
+            </div>
+            <ul class="table-col-list">
+              <li><span class="pk">PK</span> id (BIGINT)</li>
+              <li>name (General Checkup: 100)</li>
+              <li>category, base_price (₹399)</li>
+              <li>duration_minutes (30)</li>
+              <li>is_active (BOOLEAN)</li>
+            </ul>
+          </div>
+
+          <div class="table-card">
+            <div class="table-card-head">
+              <span>admins</span>
+              <span style="color:#64748B;">Security</span>
+            </div>
+            <ul class="table-col-list">
+              <li><span class="pk">PK</span> id (BIGINT)</li>
+              <li><span class="uk">UK</span> username, email</li>
+              <li>password_hash (BCrypt)</li>
+              <li>role (SUPER_ADMIN/STAFF)</li>
+              <li>is_active (BOOLEAN)</li>
+            </ul>
+          </div>
+
+          <div class="table-card">
+            <div class="table-card-head">
+              <span>status_history</span>
+              <span style="color:#64748B;">Audit</span>
+            </div>
+            <ul class="table-col-list">
+              <li><span class="pk">PK</span> id (BIGINT)</li>
+              <li><span class="fk">FK</span> appointment_id</li>
+              <li>old_status, new_status</li>
+              <li>changed_by, changed_at</li>
+              <li>notes (VARCHAR 255)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: rgba(0, 212, 178, 0.08); border: 1px solid rgba(0, 212, 178, 0.25); border-radius: 10px; padding: 12px; margin-top: 14px; font-size: 11.5px; color: #CBD5E1;">
+        <strong style="color: #00D4B2;">🛡️ Double-Booking Guard:</strong> Composite unique constraint on <code>(doctor_id, appointment_date, time_slot, is_active)</code> prevents race conditions under high traffic.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Complete REST API Endpoints Matrix -->
+  <div class="api-matrix-box">
+    <div class="section-tag" style="margin-bottom: 4px;">Frontend-Backend REST API Matrix</div>
+    <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF;">Mounted Endpoints under Base URL: <code>/api/v1</code></h3>
+
+    <div class="api-grid">
+      <div class="api-card">
+        <span class="api-method method-get">GET</span>
+        <span class="api-endpoint">/appointments/available-slots</span>
+        <p class="api-desc">Calculates 30-min free slots for doctor &amp; date.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-post">POST</span>
+        <span class="api-endpoint">/appointments</span>
+        <p class="api-desc">Books appointment, matches patient &amp; generates token.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-get">GET</span>
+        <span class="api-endpoint">/appointments</span>
+        <p class="api-desc">Admin list with status, doctor, date &amp; pagination.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-patch">PATCH</span>
+        <span class="api-endpoint">/appointments/:id/status</span>
+        <p class="api-desc">Switches status to CONFIRMED / COMPLETED / CANCELLED.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-post">POST</span>
+        <span class="api-endpoint">/auth/login</span>
+        <p class="api-desc">BCrypt password check &amp; JWT Bearer generation.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-get">GET</span>
+        <span class="api-endpoint">/auth/me</span>
+        <p class="api-desc">Fetches authenticated user profile &amp; assigned roles.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-get">GET</span>
+        <span class="api-endpoint">/doctors</span>
+        <p class="api-desc">Returns active clinical doctors, fees &amp; specialties.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-get">GET</span>
+        <span class="api-endpoint">/services</span>
+        <p class="api-desc">Dental catalog (General Checkup ₹399, Implants, etc.).</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-get">GET</span>
+        <span class="api-endpoint">/patients</span>
+        <p class="api-desc">Directory search by patient phone or full name.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-post">POST</span>
+        <span class="api-endpoint">/inquiries</span>
+        <p class="api-desc">Public contact form submission with instant lead log.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-get">GET</span>
+        <span class="api-endpoint">/dashboard/summary</span>
+        <p class="api-desc">Aggregated counts, today's OPD list, and revenue stats.</p>
+      </div>
+
+      <div class="api-card">
+        <span class="api-method method-get">GET</span>
+        <span class="api-endpoint">/api/health</span>
+        <p class="api-desc">System healthcheck &amp; MySQL connection status monitor.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>🏥 <span class="brand">Akansha Dental Clinic &amp; Implant Center</span> • Minal Residency, Bhopal</div>
+    <div>Architecture Specification: Node.js 24 + Express + MySQL 8.x + React 19 • ISO 9001:2015 Ready</div>
+    <div>Generated: 2026 • Port 8080 &harr; Port 5173</div>
+  </div>
+</div>
+</body>
+</html>

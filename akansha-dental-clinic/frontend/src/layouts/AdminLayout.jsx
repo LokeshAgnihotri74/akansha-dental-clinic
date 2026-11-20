@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import DentalLogo from '../components/DentalLogo';
 
 export default function AdminLayout() {
   const { user, logout, hasRole } = useAuth();
@@ -113,7 +114,7 @@ export default function AdminLayout() {
                 fontSize: '1.2rem',
               }}
             >
-              <Activity size={22} />
+              <DentalLogo size={24} light={false} />
             </div>
             <div>
               <div style={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.02em', color: '#fff' }}>

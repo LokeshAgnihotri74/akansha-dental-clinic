@@ -1,44 +1,32 @@
-# Java / Maven
-target/
-*.class
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-hs_err_pid*
-replay_pid*
-
-# Node / React
+# Dependencies
 node_modules/
+**/node_modules/
 dist/
+**/dist/
 dist-ssr/
 *.local
 .npm/
+
+# Environment variables & secrets
+.env
+**/.env
+.env.production
+*.pem
+*.key
 
 # IDE / Editors
 .idea/
 *.iml
 .vscode/
 *.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
 .DS_Store
 Thumbs.db
-
-# Environment variables & secrets
-.env
-.env.production
-*.pem
-*.key
-*.p12
 
 # Database / Local artifacts
 *.db
 *.sqlite
 *.sqlite3
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

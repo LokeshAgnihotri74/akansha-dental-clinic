@@ -8,7 +8,24 @@ import Button from '../../components/Button';
 import Spinner from '../../components/Spinner';
 import { useToast } from '../../context/ToastContext';
 
+const ANY_DOCTOR_OPTION = {
+  id: 0,
+  fullName: 'Any Available Doctor (Koi Bhi Doctor)',
+  specialization: 'Clinic Assigns Best Available Specialist',
+  consultationFee: 0
+};
+
+const GENERAL_CHECKUP_SERVICE = {
+  id: 100,
+  name: 'General Dental Checkup & Consultation',
+  category: 'DIAGNOSTIC',
+  price: 399,
+  durationMinutes: 20,
+  description: 'Complete oral cavity examination, digital intraoral screening & specialist consultation.'
+};
+
 const DEFAULT_DOCTORS = [
+  ANY_DOCTOR_OPTION,
   { id: 1, fullName: 'Dr. Akansha Mishra', specialization: 'Chief Implantologist & Cosmetic Dentist', consultationFee: 1000 },
   { id: 2, fullName: 'Dr. Rajiv Mehta', specialization: 'Senior Orthodontist', consultationFee: 1000 },
   { id: 3, fullName: 'Dr. Sneha Kulkarni', specialization: 'Consultant Endodontist', consultationFee: 1000 },
@@ -16,12 +33,19 @@ const DEFAULT_DOCTORS = [
 ];
 
 const DEFAULT_SERVICES = [
-  { id: 1, name: 'Precision Dental Implants', price: 15000, durationMinutes: 90 },
-  { id: 2, name: 'Microscopic Root Canal Therapy', price: 2700, durationMinutes: 60 },
-  { id: 3, name: 'Clear Aligners & Invisible Braces', price: 27000, durationMinutes: 45 },
-  { id: 4, name: 'Ultrasonic Scaling & Deep Polishing', price: 900, durationMinutes: 30 },
-  { id: 5, name: 'Laser Teeth Whitening', price: 4200, durationMinutes: 45 },
-  { id: 6, name: 'Zirconia Aesthetic Crowns', price: 5400, durationMinutes: 60 }
+  GENERAL_CHECKUP_SERVICE,
+  { id: 1, name: 'Dental Implants (Immediate Implantology)', price: 32990, durationMinutes: 90 },
+  { id: 2, name: 'Clear Aligners & Braces', price: 7000, durationMinutes: 45 },
+  { id: 3, name: 'Preventive Dentistry', price: 1499, durationMinutes: 30 },
+  { id: 4, name: 'Microscopic Root Canal Therapy', price: 2700, durationMinutes: 60 },
+  { id: 5, name: 'Cosmetic Dentistry & Smile Design', price: 4200, durationMinutes: 45 },
+  { id: 6, name: 'Ultrasonic Scaling & Deep Polishing', price: 900, durationMinutes: 30 },
+  { id: 7, name: 'Tooth-Colored Dental Fillings', price: 1500, durationMinutes: 40 },
+  { id: 8, name: 'Zirconia Aesthetic Crowns & Bridges', price: 5400, durationMinutes: 60 },
+  { id: 9, name: 'Painless Tooth Removal', price: 1200, durationMinutes: 45 },
+  { id: 10, name: 'Pediatric Dentistry Checkup', price: 1000, durationMinutes: 30 },
+  { id: 11, name: 'Laser Gum & Soft Tissue Treatment', price: 3500, durationMinutes: 45 },
+  { id: 12, name: 'Digital 3D Intraoral Scanning', price: 1500, durationMinutes: 20 }
 ];
 
 const DEFAULT_SLOTS = [
@@ -58,8 +82,10 @@ export default function AppointmentBookingPage() {
   const [loadingInitial, setLoadingInitial] = useState(false);
 
   // Form selections - automatically preselected so dropdown is never empty
-  const [selectedDoctorId, setSelectedDoctorId] = useState(() => searchParams.get('doctorId') || '1');
-  const [selectedServiceId, setSelectedServiceId] = useState(() => searchParams.get('serviceId') || '1');
+  // Default doctor: '0' (Any Available Doctor - ₹0)
+  // Default treatment: '100' (General Dental Checkup & Consultation - ₹399)
+  const [selectedDoctorId, setSelectedDoctorId] = useState(() => searchParams.get('doctorId') || '0');
+  const [selectedServiceId, setSelectedServiceId] = useState(() => searchParams.get('serviceId') || '100');
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date().toISOString().split('T')[0];
     return today;
@@ -74,10 +100,11 @@ export default function AppointmentBookingPage() {
   });
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // Patient Info
+  // Patient Info & Validation
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -85,25 +112,43 @@ export default function AppointmentBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
 
+  // Phone input validator for 10-digit Indian numbers
+  const handlePhoneChange = (e) => {
+    const raw = e.target.value;
+    if (!/^[0-9+\s-]*$/.test(raw)) return;
+    if (raw.length > 15) return;
+    setPhone(raw);
+
+    const digits = raw.replace(/\D/g, '');
+    const clean = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
+
+    if (raw.trim() === '') {
+      setPhoneError('Contact mobile number is required');
+    } else if (clean.length > 0 && !/^[6-9]/.test(clean)) {
+      setPhoneError('Mobile number must start with 6, 7, 8, or 9');
+    } else if (clean.length > 0 && clean.length !== 10) {
+      setPhoneError(`Must be exactly 10 digits (currently ${clean.length} digits)`);
+    } else {
+      setPhoneError('');
+    }
+  };
+
   // Load doctors and services
   useEffect(() => {
     async function loadMetadata() {
       try {
-        const [docRes, srvRes] = await Promise.all([
+        const [docRes, srvRes] = await Promise.allSettled([
           doctorService.getDoctors(true),
           catalogService.getServices(true),
         ]);
-        if (docRes?.data) setDoctors(docRes.data);
-        if (srvRes?.data) setServices(srvRes.data);
-
-        if (!selectedDoctorId && docRes?.data?.length > 0) {
-          setSelectedDoctorId(docRes.data[0].id.toString());
+        if (docRes.status === 'fulfilled' && docRes.value?.data && docRes.value.data.length > 0) {
+          setDoctors([ANY_DOCTOR_OPTION, ...docRes.value.data]);
         }
-        if (!selectedServiceId && srvRes?.data?.length > 0) {
-          setSelectedServiceId(srvRes.data[0].id.toString());
+        if (srvRes.status === 'fulfilled' && srvRes.value?.data && srvRes.value.data.length > 0) {
+          setServices([GENERAL_CHECKUP_SERVICE, ...srvRes.value.data]);
         }
       } catch (err) {
-        showToast('Failed to load clinic doctor roster or service catalog', 'error');
+        // retain default doctors & services
       } finally {
         setLoadingInitial(false);
       }
@@ -113,12 +158,24 @@ export default function AppointmentBookingPage() {
 
   // Fetch slots whenever doctor or date changes
   useEffect(() => {
-    if (!selectedDoctorId || !selectedDate) return;
+    if (selectedDoctorId === undefined || selectedDoctorId === null || !selectedDate) return;
 
     let isMounted = true;
     async function fetchSlots() {
       setLoadingSlots(true);
       setSelectedSlot('');
+
+      // If 'Any Available Doctor' (id: 0), all clinic slots are available
+      if (selectedDoctorId === '0' || selectedDoctorId === 0) {
+        setSlotsData({
+          clinicOpen: true,
+          dayOfWeek: 'SELECTED DAY',
+          slots: DEFAULT_SLOTS
+        });
+        setLoadingSlots(false);
+        return;
+      }
+
       try {
         const res = await appointmentService.getAvailableSlots(selectedDoctorId, selectedDate);
         if (isMounted && res?.data) {
@@ -126,7 +183,6 @@ export default function AppointmentBookingPage() {
         }
       } catch (err) {
         if (isMounted) {
-          // Graceful fallback to guaranteed default slots
           setSlotsData({
             clinicOpen: true,
             dayOfWeek: 'SELECTED DAY',
@@ -161,8 +217,17 @@ export default function AppointmentBookingPage() {
       showToast('Please select an available time slot', 'error');
       return;
     }
-    if (!firstName.trim() || !phone.trim()) {
-      showToast('Please provide your name and phone number', 'error');
+    if (!firstName.trim()) {
+      showToast('Please provide your first name', 'error');
+      return;
+    }
+    
+    // Strict Indian mobile phone validation
+    const digits = phone.replace(/\D/g, '');
+    const cleanDigits = digits.startsWith('91') && digits.length === 12 ? digits.slice(2) : digits;
+    if (!cleanDigits || cleanDigits.length !== 10 || !/^[6-9]/.test(cleanDigits)) {
+      setPhoneError('Please enter a valid 10-digit Indian mobile number (e.g. 9399354201)');
+      showToast('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9', 'error');
       return;
     }
 
@@ -437,14 +502,36 @@ export default function AppointmentBookingPage() {
                     <Phone size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} />
                     Mobile Phone Number *
                   </label>
-                  <input
-                    type="tel"
-                    className="form-control"
-                    placeholder="+91 93993 54201"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="tel"
+                      className={`form-control ${phoneError ? 'is-invalid' : phone && !phoneError ? 'is-valid' : ''}`}
+                      placeholder="e.g. 93993 54201"
+                      value={phone}
+                      onChange={handlePhoneChange}
+                      maxLength={15}
+                      required
+                      style={{
+                        borderColor: phoneError ? '#E11D48' : phone && !phoneError ? '#10B981' : undefined,
+                        paddingRight: '35px'
+                      }}
+                    />
+                    {phone && !phoneError && (
+                      <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#10B981', fontWeight: 800 }}>
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  {phoneError ? (
+                    <span style={{ color: '#E11D48', fontSize: '0.8rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertCircle size={13} />
+                      {phoneError}
+                    </span>
+                  ) : (
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', marginTop: '3px', display: 'block' }}>
+                      10-digit Indian mobile number (starting with 6, 7, 8, or 9)
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -473,7 +560,47 @@ export default function AppointmentBookingPage() {
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '1rem' }}>
+              {/* Consultation & Treatment Fee Summary Card */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1.25rem 1.5rem',
+                backgroundColor: 'rgba(0, 212, 178, 0.08)',
+                borderRadius: 'var(--radius-md)',
+                border: '1.5px solid rgba(0, 212, 178, 0.35)',
+                marginTop: '1.75rem',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div>
+                  <span style={{ fontSize: '0.76rem', color: 'var(--color-accent-hover)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>
+                    Selected Specialist & Treatment
+                  </span>
+                  <strong style={{ fontSize: '1.05rem', color: 'var(--color-primary)' }}>
+                    {selectedDoctor?.fullName || 'Any Available Doctor'}
+                  </strong>
+                  <span style={{ display: 'block', fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
+                    {selectedService?.name || 'General Dental Checkup & Consultation'}
+                  </span>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, display: 'block' }}>
+                    Total Estimated Cost
+                  </span>
+                  <strong style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                    ₹{((selectedDoctor?.consultationFee || 0) + (selectedService?.price || 0)).toLocaleString('en-IN')}
+                  </strong>
+                  {selectedDoctor?.consultationFee === 0 && (
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: '#10B981', fontWeight: 700 }}>
+                      ✓ Doctor Consultation: ₹0 (Free)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                   <ShieldCheck size={18} color="var(--color-accent-hover)" />
                   <span>Your personal contact information is protected under strict healthcare privacy standards.</span>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Phone, Clock, MapPin, Calendar, Menu, X, ShieldAlert, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import DentalLogo from './DentalLogo';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -67,11 +68,7 @@ export default function Navbar() {
       <div className="container nav-container">
         <Link to="/" className="logo-brand" onClick={closeMobileMenu}>
           <div className="logo-icon-box">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2C8.5 2 6 4.5 6 8c0 3 1.5 6 3 10 .8 2 2 4 3 4s2.2-2 3-4c1.5-4 3-7 3-10 0-3.5-2.5-6-6-6z" fill="#00D4B2" fillOpacity="0.2"/>
-              <path d="M12 2C8.5 2 6 4.5 6 8c0 3 1.5 6 3 10 .8 2 2 4 3 4s2.2-2 3-4c1.5-4 3-7 3-10 0-3.5-2.5-6-6-6z"/>
-              <circle cx="12" cy="8" r="2"/>
-            </svg>
+            <DentalLogo size={28} light={true} />
           </div>
           <div>
             <div className="brand-text-title">Akansha Dental</div>

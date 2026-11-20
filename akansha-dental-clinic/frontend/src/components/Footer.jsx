@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Clock, ShieldCheck, Heart } from 'lucide-react';
+import DentalLogo from './DentalLogo';
 
 export default function Footer() {
   return (
@@ -11,22 +12,20 @@ export default function Footer() {
           <div className="footer-col">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
               <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '8px',
-                backgroundColor: 'rgba(0, 212, 178, 0.15)',
-                color: 'var(--color-accent)',
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(0, 212, 178, 0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: '1.2rem'
+                border: '1px solid rgba(0, 212, 178, 0.3)'
               }}>
-                🦷
+                <DentalLogo size={28} light={true} />
               </div>
               <div>
-                <h4 style={{ margin: 0, color: '#fff', fontSize: '1.2rem' }}>Akansha Dental Clinic</h4>
-                <p style={{ margin: 0, color: 'var(--color-accent)', fontSize: '0.75rem', fontWeight: 600 }}>Implant & Cosmetic Dentistry</p>
+                <h4 style={{ margin: 0, color: '#fff', fontSize: '1.2rem', fontWeight: 800 }}>Akansha Dental</h4>
+                <p style={{ margin: 0, color: 'var(--color-accent)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Clinic & Implant Center</p>
               </div>
             </div>
             <p style={{ color: '#94A3B8', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
