@@ -410,27 +410,36 @@ export default function HomePage() {
           </div>
 
           <div className="grid-4">
-            {featuredDoctors.map((doc) => (
-              <div key={doc.id} className="card doctor-card">
-                <div className="doctor-img-box">
-                  <img src={doc.imageUrl} alt={doc.fullName} className="doctor-img" loading="lazy" />
-                </div>
-                <div className="doctor-info-box">
-                  <div className="doctor-specialization">{doc.specialization}</div>
-                  <h3 className="doctor-name">{doc.fullName}</h3>
-                  <div className="doctor-qualification">{doc.qualification} • {doc.experienceYears} Yrs Exp</div>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem', lineClamp: 3, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {doc.bio}
-                  </p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>Fee: ₹{doc.consultationFee}</span>
-                    <Link to="/book-appointment" className="btn btn-accent btn-sm">
-                      Book Visit
-                    </Link>
+            {featuredDoctors.map((doc) => {
+              const docName = doc.fullName || doc.name || 'Doctor';
+              const docSpec = doc.specialization || 'Dental Specialist';
+              const docQual = doc.qualification || 'BDS, MDS';
+              const docExp = doc.experienceYears || doc.experience_years || 5;
+              const docFee = doc.consultationFee !== undefined ? doc.consultationFee : (doc.consultation_fee || 500);
+              const docImg = doc.imageUrl || doc.image_url || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600';
+
+              return (
+                <div key={doc.id} className="card doctor-card">
+                  <div className="doctor-img-box">
+                    <img src={docImg} alt={docName} className="doctor-img" loading="lazy" />
+                  </div>
+                  <div className="doctor-info-box">
+                    <div className="doctor-specialization">{docSpec}</div>
+                    <h3 className="doctor-name">{docName}</h3>
+                    <div className="doctor-qualification">{docQual} • {docExp} Yrs Exp</div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem', lineClamp: 3, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {doc.bio || 'Compassionate oral healthcare specialist dedicated to clinical excellence.'}
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>Fee: ₹{docFee}</span>
+                      <Link to="/book-appointment" className="btn btn-accent btn-sm">
+                        Book Visit
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div style={{ textAlign: 'center', marginTop: '1.75rem' }}>

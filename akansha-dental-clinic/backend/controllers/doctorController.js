@@ -46,6 +46,24 @@ let memoryDoctors = [
 
 let nextDoctorId = 5;
 
+const normalizeDoctor = (d) => ({
+  id: d.id,
+  name: d.name || d.fullName,
+  fullName: d.name || d.fullName,
+  qualification: d.qualification,
+  specialization: d.specialization,
+  experience_years: d.experience_years || d.experienceYears || 5,
+  experienceYears: d.experience_years || d.experienceYears || 5,
+  consultation_fee: d.consultation_fee !== undefined ? d.consultation_fee : (d.consultationFee || 500),
+  consultationFee: d.consultationFee !== undefined ? d.consultationFee : (d.consultation_fee || 500),
+  bio: d.bio,
+  image_url: d.image_url || d.imageUrl || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600',
+  imageUrl: d.imageUrl || d.image_url || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600',
+  is_active: d.is_active !== undefined ? d.is_active : true,
+  email: d.email || `doctor${d.id}@akanshadental.com`,
+  phone: d.phone || '+91 8130 406 405'
+});
+
 const getDoctors = async (req, res, next) => {
   try {
     const activeOnly = req.query.activeOnly !== 'false';
@@ -67,7 +85,8 @@ const getDoctors = async (req, res, next) => {
       doctors = doctors.filter(d => d.is_active);
     }
 
-    return success(res, doctors, 'Doctors roster retrieved.');
+    const normalized = doctors.map(normalizeDoctor);
+    return success(res, normalized, 'Doctors roster retrieved.');
   } catch (err) {
     next(err);
   }
@@ -78,7 +97,7 @@ const getDoctorById = async (req, res, next) => {
     const id = parseInt(req.params.id, 10);
     const doctor = memoryDoctors.find(d => d.id === id);
     if (!doctor) return error(res, `Doctor #${id} not found`, 404);
-    return success(res, doctor, 'Doctor profile retrieved.');
+    return success(res, normalizeDoctor(doctor), 'Doctor profile retrieved.');
   } catch (err) {
     next(err);
   }
