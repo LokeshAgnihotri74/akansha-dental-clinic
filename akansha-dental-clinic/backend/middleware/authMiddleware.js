@@ -19,14 +19,16 @@ const authenticate = (req, res, next) => {
   next();
 };
 
-const requireRole = (allowedRoles = []) => {
+const requireRole = (...allowedRoles) => {
+  const flatRoles = allowedRoles.flat().map(r => String(r).toUpperCase().replace(/^ROLE_/, ''));
   return (req, res, next) => {
     if (!req.user) {
       return error(res, 'Unauthorized request.', 401);
     }
 
-    const userRole = (req.user.role || '').toUpperCase();
-    const authorized = allowedRoles.map(r => r.toUpperCase()).includes(userRole);
+    const userRole = (req.user.role || '').toUpperCase().replace(/^ROLE_/, '');
+    const userRoles = (req.user.roles || [req.user.role]).map(r => (r || '').toUpperCase().replace(/^ROLE_/, ''));
+    const authorized = flatRoles.includes(userRole) || userRoles.some(r => flatRoles.includes(r));
 
     if (!authorized) {
       return error(res, 'Access denied. You do not have permissions for this action.', 403);
@@ -38,5 +40,6 @@ const requireRole = (allowedRoles = []) => {
 
 module.exports = {
   authenticate,
-  requireRole
+  requireRole,
+  authorizeRoles: requireRole
 };

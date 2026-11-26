@@ -164,8 +164,60 @@ const runWorkflowTests = async () => {
         throw new Error('Make Contact form submission failed!');
       }
 
+      // -----------------------------------------------------------------
+      // TEST 9: Admin User Management (GET /admins)
+      // -----------------------------------------------------------------
+      console.log('\n🔹 9. Testing User Access Control (GET /admins)...');
+      const adminsRes = await fetch(`${baseUrl}/admins`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const adminsData = await adminsRes.json();
+      console.log('   Status:', adminsRes.status);
+      console.log('   Total System Users:', adminsData.data?.length);
+      if (adminsRes.status !== 200 || !adminsData.data?.length) {
+        throw new Error('Admins retrieval failed');
+      }
+
+      // -----------------------------------------------------------------
+      // TEST 10: Audit Logs Trail (GET /audit-logs)
+      // -----------------------------------------------------------------
+      console.log('\n🔹 10. Testing Security Audit Logs (GET /audit-logs)...');
+      const auditRes = await fetch(`${baseUrl}/audit-logs`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const auditData = await auditRes.json();
+      console.log('   Status:', auditRes.status);
+      console.log('   Audit Records Found:', auditData.data?.totalElements);
+      if (auditRes.status !== 200 || !auditData.data?.content) {
+        throw new Error('Audit logs retrieval failed');
+      }
+
+      // -----------------------------------------------------------------
+      // TEST 11: Clinic Settings (GET /settings & PUT /settings/:key)
+      // -----------------------------------------------------------------
+      console.log('\n🔹 11. Testing Clinic Settings Configuration (GET & PUT /settings)...');
+      const settingsRes = await fetch(`${baseUrl}/settings`);
+      const settingsData = await settingsRes.json();
+      console.log('   Status (GET):', settingsRes.status);
+      console.log('   Settings Configured:', settingsData.data?.length);
+
+      const updateRes = await fetch(`${baseUrl}/settings/clinic_hours_weekday`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ value: '10:00 AM – 08:30 PM (Sanitized Operatory)' })
+      });
+      const updateData = await updateRes.json();
+      console.log('   Status (PUT):', updateRes.status);
+      console.log('   Updated Value:', updateData.data?.value);
+      if (updateRes.status !== 200) {
+        throw new Error('Settings update failed');
+      }
+
       console.log('\n===============================================================');
-      console.log('🏆 ALL 8 WORKABLE BACKEND TESTS PASSED (100% PRODUCTION READY)!');
+      console.log('🏆 ALL 11 WORKABLE BACKEND TESTS PASSED (100% PRODUCTION READY)!');
       console.log('===============================================================\n');
     } catch (testError) {
       console.error('\n❌ Test execution error:', testError.message);

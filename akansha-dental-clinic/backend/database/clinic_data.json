@@ -898,6 +898,16 @@
   ],
   "patients": [
     {
+      "id": 4,
+      "firstName": "Aarav",
+      "lastName": "Saxena",
+      "fullName": "Aarav Saxena",
+      "full_name": "Aarav Saxena",
+      "phone": "9826019999",
+      "email": "aarav.saxena@example.com",
+      "createdAt": "2026-11-26T05:19:04.427Z"
+    },
+    {
       "id": 3,
       "firstName": "Lokesh",
       "lastName": "Agnihotri",
@@ -932,6 +942,42 @@
     }
   ],
   "appointments": [
+    {
+      "id": 5,
+      "appointmentNumber": "APT-2026-6590",
+      "appointmentCode": "APT-2026-6590",
+      "bookingReference": "APT-2026-6590",
+      "booking_reference": "APT-2026-6590",
+      "patientId": 4,
+      "patient_id": 4,
+      "patientName": "Aarav Saxena",
+      "patient_name": "Aarav Saxena",
+      "patientPhone": "9826019999",
+      "patient_phone": "9826019999",
+      "patientEmail": "aarav.saxena@example.com",
+      "doctorId": 0,
+      "doctor_id": 0,
+      "doctorName": "Any Available Doctor",
+      "doctor_name": "Any Available Doctor",
+      "doctorSpecialization": "First Available Specialist on Duty",
+      "serviceId": 100,
+      "service_id": 100,
+      "serviceName": "General Dental Checkup & Consultation",
+      "service_name": "General Dental Checkup & Consultation",
+      "servicePrice": 399,
+      "serviceDurationMinutes": 30,
+      "appointmentDate": "2026-11-25",
+      "appointment_date": "2026-11-25",
+      "timeSlot": "11:30 AM",
+      "time_slot": "11:30 AM",
+      "status": "PENDING",
+      "totalPrice": 399,
+      "total_price": 399,
+      "notes": "First time consultation",
+      "createdAt": "2026-11-26T05:19:04.427Z",
+      "created_at": "2026-11-26T05:19:04.427Z",
+      "is_active": true
+    },
     {
       "id": 4,
       "appointmentNumber": "APT-2026-6618",
@@ -1079,6 +1125,19 @@
   ],
   "inquiries": [
     {
+      "id": 3,
+      "fullName": "Vikram Joshi",
+      "full_name": "Vikram Joshi",
+      "phone": "9826055555",
+      "email": "",
+      "subject": "Contact Request [Treatment Related]",
+      "message": "Treatment Related: Interested in invisible aligners pricing and duration",
+      "status": "NEW",
+      "adminNotes": "Generated via Website 'Make Contact' Form. Ref: CNT-4463",
+      "admin_notes": "Generated via Website 'Make Contact' Form. Ref: CNT-4463",
+      "createdAt": "2026-11-26T05:19:04.463Z"
+    },
+    {
       "id": 2,
       "fullName": "Lokesh Agnihotri",
       "full_name": "Lokesh Agnihotri",
@@ -1104,6 +1163,106 @@
       "admin_notes": "",
       "createdAt": "2026-11-20T07:05:08.514Z",
       "created_at": "2026-11-20T07:05:08.514Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": 1,
+      "actorUsername": "admin@akanshadental.com",
+      "action": "SYSTEM_BOOTSTRAP",
+      "resource": "CORE_DATABASE",
+      "ipAddress": "127.0.0.1",
+      "details": "System initialized with dual-mode persistent JSON & MySQL engine.",
+      "timestamp": "2026-11-25T05:19:04.106Z"
+    },
+    {
+      "id": 2,
+      "actorUsername": "admin@akanshadental.com",
+      "action": "CATALOG_SYNC",
+      "resource": "SERVICES_REGISTRY",
+      "ipAddress": "127.0.0.1",
+      "details": "Expanded specialized dental treatments to 12 production procedures.",
+      "timestamp": "2026-11-26T00:19:04.106Z"
+    },
+    {
+      "id": 3,
+      "actorUsername": "admin@akanshadental.com",
+      "action": "ROSTER_UPDATE",
+      "resource": "DOCTORS_FACULTY",
+      "ipAddress": "127.0.0.1",
+      "details": "Synchronized weekly morning & evening clinical OPD timings for dental surgeons.",
+      "timestamp": "2026-11-26T03:19:04.106Z"
+    },
+    {
+      "id": 4,
+      "actorUsername": "staff@akanshadental.com",
+      "action": "INQUIRY_REVIEW",
+      "resource": "PATIENT_LEADS",
+      "ipAddress": "127.0.0.1",
+      "details": "Automated SMS dispatch triggered for incoming patient contact request.",
+      "timestamp": "2026-11-26T04:49:04.106Z"
+    }
+  ],
+  "settings": [
+    {
+      "id": 1,
+      "key": "clinic_name",
+      "value": "Akansha Dental Clinic & Implant Center",
+      "description": "Primary hospital name displayed across the website and invoices."
+    },
+    {
+      "id": 2,
+      "key": "clinic_phone",
+      "value": "+91 8130 406 405",
+      "description": "Main reception telephone for appointments and queries."
+    },
+    {
+      "id": 3,
+      "key": "clinic_emergency_phone",
+      "value": "+91 9399354201",
+      "description": "24/7 Dental trauma and acute toothache emergency line."
+    },
+    {
+      "id": 4,
+      "key": "clinic_email",
+      "value": "support@akanshadental.com",
+      "description": "Official clinical support and administrative email address."
+    },
+    {
+      "id": 5,
+      "key": "clinic_address",
+      "value": "Raj Business Park, RA-5, Minal Shopping St, Minal Residency, Bhopal, Madhya Pradesh 462041",
+      "description": "Physical clinic location for patient visits and maps."
+    },
+    {
+      "id": 6,
+      "key": "clinic_hours_weekday",
+      "value": "10:00 AM – 08:30 PM (Sanitized Operatory)",
+      "description": "Standard Monday to Saturday operational outpatient hours."
+    },
+    {
+      "id": 7,
+      "key": "clinic_hours_weekend",
+      "value": "10:00 AM – 01:00 PM (Emergency by Call)",
+      "description": "Sunday emergency schedule."
+    },
+    {
+      "id": 8,
+      "key": "sterility_protocol",
+      "value": "Class-B Autoclave & UV Sanitized Protocol",
+      "description": "Hospital sterilization and infection prevention standard."
+    },
+    {
+      "id": 9,
+      "key": "online_booking_enabled",
+      "value": "true",
+      "description": "Whether online appointment self-reservation engine is enabled."
+    },
+    {
+      "id": 10,
+      "key": "sms_notifications_enabled",
+      "value": "true",
+      "description": "Automated SMS/WhatsApp notifications on booking and contact requests."
     }
   ]
 }

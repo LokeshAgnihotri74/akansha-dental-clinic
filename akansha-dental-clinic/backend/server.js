@@ -16,6 +16,9 @@ const serviceRoutes = require('./routes/serviceRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const inquiryRoutes = require('./routes/inquiryRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const auditRoutes = require('./routes/auditRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -51,6 +54,9 @@ app.use('/api/v1/services', serviceRoutes);
 app.use('/api/v1/patients', patientRoutes);
 app.use('/api/v1/inquiries', inquiryRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/admins', adminRoutes);
+app.use('/api/v1/audit-logs', auditRoutes);
+app.use('/api/v1/settings', settingsRoutes);
 
 // Error Handling Middlewares
 app.use(notFound);
