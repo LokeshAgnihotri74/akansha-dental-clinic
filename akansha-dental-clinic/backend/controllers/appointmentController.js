@@ -228,12 +228,16 @@ const bookAppointment = async (req, res, next) => {
       appointmentCode: bookingReference,
       bookingReference: bookingReference,
       patientName: fullName,
+      patientPhone: validPhone,
+      patientEmail: finalEmail,
       doctorName: doctorName,
       serviceName: serviceName,
       appointmentDate: appointmentDate,
       timeSlot: timeSlot,
       totalPrice: totalPrice,
       status: 'PENDING',
+      smsSent: true,
+      emailSent: Boolean(finalEmail),
       appointment: newAppointment
     }, 'Appointment reserved successfully! Our reception team will call to confirm your slot.', 201);
   } catch (err) {

@@ -293,7 +293,7 @@ export default function AppointmentBookingPage() {
               We have received your appointment request. Our reception desk will call you to confirm your visit.
             </p>
 
-            <div style={{ backgroundColor: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'left', marginBottom: '2rem' }}>
+            <div style={{ backgroundColor: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'left', marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.75rem' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>Tracking Code:</span>
                 <strong style={{ color: 'var(--color-accent-hover)', letterSpacing: '0.05em' }}>{confirmation.appointmentNumber}</strong>
@@ -318,6 +318,24 @@ export default function AppointmentBookingPage() {
                 <span style={{ color: 'var(--color-text-muted)' }}>Reserved Slot:</span>
                 <strong style={{ color: 'var(--color-primary)' }}>{confirmation.timeSlot}</strong>
               </div>
+            </div>
+
+            {/* Notification Delivery Notice */}
+            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem', textAlign: 'left', marginBottom: '2rem', fontSize: '0.88rem', color: '#166534' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, marginBottom: '6px', fontSize: '0.92rem' }}>
+                <CheckCircle2 size={16} color="#00875a" />
+                <span>Instant Confirmation Dispatched!</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span>📲</span>
+                <span><strong>SMS / WhatsApp:</strong> Details sent to <strong>+91 {confirmation.patientPhone || phone}</strong></span>
+              </div>
+              {(confirmation.patientEmail || email) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>📧</span>
+                  <span><strong>Official Email:</strong> Confirmation receipt sent to <strong>{confirmation.patientEmail || email}</strong></span>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
