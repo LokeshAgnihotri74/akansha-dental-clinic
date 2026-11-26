@@ -1,0 +1,40 @@
+services:
+  # 1. Backend REST API Service
+  - type: web
+    name: akansha-dental-backend
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: akansha-dental-clinic/backend
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: CLINIC_NAME
+        value: "Akansha Dental Clinic & Implant Center"
+      - key: CLINIC_PHONE
+        value: "+91 8130 406 405"
+      - key: CLINIC_EMAIL
+        value: "support@akanshadental.com"
+
+  # 2. Frontend React Website (Static Site)
+  - type: web
+    name: akansha-dental-frontend
+    runtime: static
+    plan: free
+    region: singapore
+    rootDir: akansha-dental-clinic/frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
