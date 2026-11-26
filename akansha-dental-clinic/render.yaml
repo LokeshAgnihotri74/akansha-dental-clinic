@@ -1,0 +1,25 @@
+services:
+  # Single Unified Full-Stack Service (Frontend UI + Backend API on 1 Single Live Link)
+  - type: web
+    name: akansha-dental-clinic
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: CLINIC_NAME
+        value: "Akansha Dental Clinic & Implant Center"
+      - key: CLINIC_PHONE
+        value: "+91 8130 406 405"
+      - key: CLINIC_EMAIL
+        value: "support@akanshadental.com"
