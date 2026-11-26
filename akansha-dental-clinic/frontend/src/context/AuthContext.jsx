@@ -78,10 +78,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const hasRole = (role) => {
-    if (!user || !user.roles) return false;
-    const cleanRole = role.startsWith('ROLE_') ? role : `ROLE_${role}`;
-    return user.roles.includes(cleanRole);
+  const hasRole = (...roles) => {
+    if (!user || !user.roles || !Array.isArray(user.roles)) return false;
+
+    // Support single string, array of strings, or multiple arguments
+    const targetRoles = roles.flat().filter(Boolean).map(r => {
+      const str = String(r).trim().toUpperCase();
+      return str.startsWith('ROLE_') ? str : `ROLE_${str}`;
+    });
+
+    if (targetRoles.length === 0) return false;
+
+    const userRoles = user.roles.map(r => {
+      const str = String(r).trim().toUpperCase();
+      return str.startsWith('ROLE_') ? str : `ROLE_${str}`;
+    });
+
+    return targetRoles.some(target => userRoles.includes(target));
   };
 
   const isSuperAdmin = hasRole('ROLE_SUPER_ADMIN');
