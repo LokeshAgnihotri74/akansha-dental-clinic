@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
+const path = require('path');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -60,6 +62,18 @@ app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/admins', adminRoutes);
 app.use('/api/v1/audit-logs', auditRoutes);
 app.use('/api/v1/settings', settingsRoutes);
+
+// Serve Frontend Static Production Build (Unified Single Domain Link)
+const frontendDistPath = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
 
 // Error Handling Middlewares
 app.use(notFound);

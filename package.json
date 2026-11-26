@@ -1,0 +1,20 @@
+{
+  "name": "akansha-dental-clinic-fullstack",
+  "version": "1.0.0",
+  "description": "Unified Fullstack Platform for Akansha Dental Clinic & Implant Center",
+  "main": "akansha-dental-clinic/backend/server.js",
+  "scripts": {
+    "build:frontend": "npm --prefix akansha-dental-clinic/frontend install && npm --prefix akansha-dental-clinic/frontend run build",
+    "build:backend": "npm --prefix akansha-dental-clinic/backend install",
+    "build": "npm run build:frontend && npm run build:backend",
+    "start": "node akansha-dental-clinic/backend/server.js"
+  },
+  "keywords": [
+    "dental",
+    "fullstack",
+    "react",
+    "express"
+  ],
+  "author": "Akansha Dental Clinic",
+  "license": "ISC"
+}
