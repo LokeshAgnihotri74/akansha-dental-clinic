@@ -235,26 +235,22 @@ export default function HomePage() {
                 At Akansha Dental Clinic, we merge certified specialist expertise with microscopic endodontics, painless laser dentistry, and 3D digital smile design in a tranquil, sterile setting.
               </p>
 
-              <div className="hero-actions">
-                <Link to="/book-appointment" className="btn btn-primary btn-lg">
-                  <Calendar size={18} />
-                  Book Appointment
-                </Link>
+              <div className="hero-actions" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                {/* 100% Hospital Sterility - Positioned in place of Book Appointment */}
+                <div className="hero-sterility-left-card" style={{ margin: 0 }}>
+                  <div className="sterility-icon-box">
+                    <Shield size={18} />
+                  </div>
+                  <div>
+                    <div className="sterility-title">100% Hospital Sterility</div>
+                    <div className="sterility-sub">Class-B Autoclave & UV Sanitized Protocol</div>
+                  </div>
+                </div>
+
                 <Link to="/services" className="btn btn-outline btn-lg">
                   Explore Treatments
                   <ArrowRight size={18} />
                 </Link>
-              </div>
-
-              {/* 100% Hospital Sterility - Positioned on Left Side Away From Carousel */}
-              <div className="hero-sterility-left-card">
-                <div className="sterility-icon-box">
-                  <Shield size={18} />
-                </div>
-                <div>
-                  <div className="sterility-title">100% Hospital Sterility</div>
-                  <div className="sterility-sub">Class-B Autoclave & UV Sanitized Protocol</div>
-                </div>
               </div>
 
               <div className="hero-stats-ribbon">
@@ -432,8 +428,14 @@ export default function HomePage() {
                     </p>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
                       <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary)' }}>Fee: ₹{docFee}</span>
-                      <Link to="/book-appointment" className="btn btn-accent btn-sm">
-                        Book Visit
+                      <Link
+                        to={`/doctors#doctor-${doc.id}`}
+                        className="btn btn-accent btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                        title={`View ${docName} full profile, schedule and OPD timings`}
+                      >
+                        <User size={14} />
+                        View Profile
                       </Link>
                     </div>
                   </div>

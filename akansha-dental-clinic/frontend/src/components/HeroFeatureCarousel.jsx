@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Phone, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Phone, Calendar, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import MakeContactModal from './MakeContactModal';
 
 const SLIDES = [
   {
@@ -58,6 +59,7 @@ const SLIDES = [
 export default function HeroFeatureCarousel() {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
 
   // Auto-scroll every 3 seconds (3000ms)
   useEffect(() => {
@@ -106,14 +108,24 @@ export default function HeroFeatureCarousel() {
               <Phone size={14} />
               <span>Call {slide.phone}</span>
             </a>
-            <Link
-              to="/book-appointment"
+            <button
+              type="button"
+              onClick={() => setContactModalOpen(true)}
               className="hero-slide-book-btn"
-              title="Book Appointment for this treatment"
+              title="Make direct contact regarding treatments, feedback, or inquiries"
+              style={{
+                cursor: 'pointer',
+                border: 'none',
+                background: '#00875a',
+                color: '#ffffff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
             >
-              <Calendar size={13} />
-              <span>Book Appointment</span>
-            </Link>
+              <MessageSquare size={13} />
+              <span>Make Contact</span>
+            </button>
           </div>
 
           <div className="hero-slide-location">
@@ -162,6 +174,12 @@ export default function HeroFeatureCarousel() {
           />
         ))}
       </div>
+
+      {/* Make Contact Interactive Dialog */}
+      <MakeContactModal
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+      />
     </div>
   );
 }

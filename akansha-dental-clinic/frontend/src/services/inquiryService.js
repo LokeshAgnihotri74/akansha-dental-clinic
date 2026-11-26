@@ -2,6 +2,7 @@ import apiClient from './apiClient';
 
 export const inquiryService = {
   submitInquiry: (data) => apiClient.post('/inquiries', data),
+  submitContactRequest: (data) => apiClient.post('/inquiries/contact', data),
   searchInquiries: (params = {}) => {
     const query = new URLSearchParams();
     if (params.status) query.append('status', params.status);

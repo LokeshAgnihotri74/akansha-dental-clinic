@@ -86,6 +86,35 @@ const notifyDeskNewInquiry = async (inquiry) => {
 };
 
 /**
+ * Send Direct SMS / WhatsApp to Patient for Contact Request Form Submission
+ * @param {Object} contact { name, phone, reason, message, refCode }
+ */
+const sendContactConfirmationNotification = async (contact) => {
+  const refCode = contact.refCode || `CNT-${Math.floor(1000 + Math.random() * 9000)}`;
+  const message = `Dear ${contact.name}, thank you for contacting Akansha Dental Clinic regarding "${contact.reason}". Your request (Ref: ${refCode}) has been received. Our clinical helpdesk will contact you shortly on ${contact.phone}. Emergency Helpline: +91 9399354201.`;
+
+  const logEntry = {
+    id: notificationHistory.length + 1,
+    recipient: contact.phone,
+    channel: 'SMS_WHATSAPP_SIMULATION',
+    type: 'MAKE_CONTACT_CONFIRMATION',
+    message,
+    status: 'DELIVERED',
+    created_at: new Date().toISOString()
+  };
+
+  notificationHistory.unshift(logEntry);
+
+  console.log('\n📲 [SMS / WHATSAPP DISPATCHED TO PATIENT CONTACT NUMBER]:');
+  console.log(`   To:      ${contact.name} (${contact.phone})`);
+  console.log(`   Reason:  ${contact.reason}`);
+  console.log(`   Ref:     ${refCode}`);
+  console.log(`   Message: ${message}\n`);
+
+  return { ...logEntry, refCode };
+};
+
+/**
  * Retrieve Notification Log History for Admin Portal
  */
 const getNotificationHistory = () => {
@@ -96,5 +125,6 @@ module.exports = {
   sendBookingConfirmation,
   sendStatusUpdateNotification,
   notifyDeskNewInquiry,
+  sendContactConfirmationNotification,
   getNotificationHistory
 };

@@ -142,8 +142,30 @@ const runWorkflowTests = async () => {
         throw new Error('Data was not persisted to disk!');
       }
 
+      // -----------------------------------------------------------------
+      // TEST 8: Make Contact Form Submission with Reason & SMS Dispatch
+      // -----------------------------------------------------------------
+      console.log('\n🔹 8. Testing Make Contact Form Submission (POST /inquiries/contact)...');
+      const contactRes = await fetch(`${baseUrl}/inquiries/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Vikram Joshi',
+          phone: '9826055555',
+          reason: 'Treatment Related',
+          message: 'Interested in invisible aligners pricing and duration'
+        })
+      });
+      const contactData = await contactRes.json();
+      console.log('   Status:', contactRes.status);
+      console.log('   Ref Code:', contactData.data?.refCode);
+      console.log('   SMS Dispatched:', contactData.data?.smsDispatched);
+      if (contactRes.status !== 201 || !contactData.data?.refCode) {
+        throw new Error('Make Contact form submission failed!');
+      }
+
       console.log('\n===============================================================');
-      console.log('🏆 ALL 7 WORKABLE BACKEND TESTS PASSED (100% PRODUCTION READY)!');
+      console.log('🏆 ALL 8 WORKABLE BACKEND TESTS PASSED (100% PRODUCTION READY)!');
       console.log('===============================================================\n');
     } catch (testError) {
       console.error('\n❌ Test execution error:', testError.message);

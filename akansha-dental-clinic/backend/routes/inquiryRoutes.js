@@ -6,6 +6,7 @@ const { validateInquiry } = require('../middleware/validator');
 
 // Public contact inquiry
 router.post('/', validateInquiry, inquiryController.submitInquiry);
+router.post('/contact', inquiryController.submitContactRequest);
 
 // Admin review
 router.get('/', authenticate, inquiryController.searchInquiries);

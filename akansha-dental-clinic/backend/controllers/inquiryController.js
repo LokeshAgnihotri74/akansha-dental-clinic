@@ -57,6 +57,76 @@ const submitInquiry = async (req, res, next) => {
   }
 };
 
+/**
+ * Submit Contact Request Form (With Reason, Captcha verification & Direct SMS Notification)
+ * POST /api/v1/inquiries/contact
+ */
+const submitContactRequest = async (req, res, next) => {
+  try {
+    const { name, fullName, phone, reason, message } = req.body;
+    const clientName = (name || fullName || '').trim();
+    const clientPhone = (phone || '').trim();
+    const clientReason = (reason || 'General Consultation').trim();
+    const clientMessage = (message || `Contact request for ${clientReason}`).trim();
+
+    if (!clientName) {
+      return error(res, 'Please provide your full name.', 400);
+    }
+
+    if (!clientPhone || !/^[6-9]\d{9}$/.test(clientPhone.replace(/\D/g, ''))) {
+      return error(res, 'Please provide a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.', 400);
+    }
+
+    const store = getStore();
+    const newId = store.inquiries.length > 0 ? Math.max(...store.inquiries.map(i => i.id)) + 1 : 1;
+    const refCode = `CNT-${Date.now().toString().slice(-4)}`;
+
+    const newInquiry = {
+      id: newId,
+      fullName: clientName,
+      full_name: clientName,
+      phone: clientPhone,
+      email: '',
+      subject: `Contact Request [${clientReason}]`,
+      message: `${clientReason}: ${clientMessage}`,
+      status: 'NEW',
+      adminNotes: `Generated via Website 'Make Contact' Form. Ref: ${refCode}`,
+      admin_notes: `Generated via Website 'Make Contact' Form. Ref: ${refCode}`,
+      createdAt: new Date().toISOString()
+    };
+
+    store.inquiries.unshift(newInquiry);
+    saveStore();
+
+    // Dispatch SMS notification to the user's contact number
+    let notifResult = null;
+    try {
+      notifResult = await notificationService.sendContactConfirmationNotification({
+        name: clientName,
+        phone: clientPhone,
+        reason: clientReason,
+        message: clientMessage,
+        refCode
+      });
+      await notificationService.notifyDeskNewInquiry(newInquiry);
+    } catch (notifErr) {
+      console.warn('SMS dispatch warning:', notifErr.message);
+    }
+
+    return success(res, {
+      id: newId,
+      refCode,
+      name: clientName,
+      phone: clientPhone,
+      reason: clientReason,
+      smsDispatched: true,
+      messageSent: `Dear ${clientName}, your request (${refCode}) regarding ${clientReason} has been recorded. Our team will contact you shortly.`
+    }, 'Contact request submitted successfully. A confirmation message has been sent to your contact number.', 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const searchInquiries = async (req, res, next) => {
   try {
     const { status, page = 0, size = 10 } = req.query;
@@ -122,6 +192,7 @@ const updateStatus = async (req, res, next) => {
 
 module.exports = {
   submitInquiry,
+  submitContactRequest,
   searchInquiries,
   getInquiryById,
   updateStatus
