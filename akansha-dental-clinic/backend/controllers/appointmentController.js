@@ -61,14 +61,30 @@ const getSlots = async (req, res, next) => {
 
     // Identify doctor or all doctors
     let targetDoctor = null;
+    let allActiveDoctors = store.doctors.filter(d => d.active !== false && d.is_active !== false);
+
+    if (getIsDbConnected()) {
+      try {
+        const docRows = await query('SELECT * FROM doctors WHERE is_active = TRUE ORDER BY id ASC');
+        if (docRows && docRows.length > 0) {
+          allActiveDoctors = docRows;
+        }
+      } catch (err) {
+        // fallback to store
+      }
+    }
+
     if (doctorId > 0) {
-      targetDoctor = store.doctors.find(d => d.id === doctorId);
+      targetDoctor = allActiveDoctors.find(d => d.id === doctorId);
+      if (!targetDoctor) {
+        targetDoctor = store.doctors.find(d => d.id === doctorId);
+      }
       if (!targetDoctor) {
         return error(res, `Doctor with ID #${doctorId} not found.`, 404);
       }
     }
 
-    // Determine booked slots for this date and doctor
+    // Determine booked slots for this date and doctor directly from MySQL when connected
     let bookedSlots = [];
 
     if (getIsDbConnected()) {
@@ -91,8 +107,7 @@ const getSlots = async (req, res, next) => {
             bookedSlots = rows.map(r => r.time_slot);
           } else {
             // For any doctor, only mark slot booked if ALL on-duty doctors are booked
-            const activeDoctors = store.doctors.filter(d => d.active !== false && d.is_active !== false);
-            const doctorsOnDuty = activeDoctors.filter(d => getDoctorDaySlots(d, dayOfWeek).length > 0);
+            const doctorsOnDuty = allActiveDoctors.filter(d => getDoctorDaySlots(d, dayOfWeek).length > 0);
             const slotBookingCount = {};
             rows.forEach(r => {
               const s = (r.time_slot || '').trim().toUpperCase();
@@ -104,11 +119,12 @@ const getSlots = async (req, res, next) => {
           }
         }
       } catch (err) {
-        console.warn('DB slot query fallback:', err.message);
+        console.warn('MySQL slot query error:', err.message);
       }
     }
 
-    if (bookedSlots.length === 0) {
+    // Fallback if not connected or offline
+    if (bookedSlots.length === 0 && !getIsDbConnected()) {
       if (doctorId > 0) {
         bookedSlots = store.appointments
           .filter(a => (a.appointment_date === date || a.appointmentDate === date) &&
@@ -117,8 +133,7 @@ const getSlots = async (req, res, next) => {
                        (a.doctor_id === doctorId || a.doctorId === doctorId))
           .map(a => a.time_slot || a.timeSlot);
       } else {
-        const activeDoctors = store.doctors.filter(d => d.active !== false && d.is_active !== false);
-        const doctorsOnDuty = activeDoctors.filter(d => getDoctorDaySlots(d, dayOfWeek).length > 0);
+        const doctorsOnDuty = allActiveDoctors.filter(d => getDoctorDaySlots(d, dayOfWeek).length > 0);
         const slotBookingCount = {};
         store.appointments
           .filter(a => (a.appointment_date === date || a.appointmentDate === date) &&
@@ -135,7 +150,7 @@ const getSlots = async (req, res, next) => {
     }
 
     // Generate doctor-aware slots
-    const targetEntity = targetDoctor || store.doctors.filter(d => d.active !== false && d.is_active !== false);
+    const targetEntity = targetDoctor || allActiveDoctors;
     const candidateSlots = targetDoctor
       ? getDoctorDaySlots(targetDoctor, dayOfWeek)
       : Array.from(new Set(targetEntity.flatMap(d => getDoctorDaySlots(d, dayOfWeek))));
@@ -168,7 +183,7 @@ const getSlots = async (req, res, next) => {
 };
 
 /**
- * Book New Patient Appointment with Strict Double-Booking Prevention & Validation
+ * Book New Patient Appointment with Strict Double-Booking Prevention & Authoritative MySQL Write
  * POST /api/v1/appointments
  */
 const bookAppointment = async (req, res, next) => {
@@ -212,19 +227,11 @@ const bookAppointment = async (req, res, next) => {
     }
 
     const [y, m, d] = rawDate.split('-').map(Number);
-    const apptDateObj = new Date(Date.UTC(y, m - 1, d));
-    const dayOfWeek = DAY_NAMES[apptDateObj.getUTCDay()];
+    const dateObj = new Date(Date.UTC(y, m - 1, d));
+    const dayOfWeek = DAY_NAMES[dateObj.getUTCDay()];
 
-    // Sunday check
     if (dayOfWeek === 'SUNDAY') {
       return error(res, 'The clinic is closed on Sundays for routine OPD consultations. Please choose Monday through Saturday.', 400);
-    }
-
-    // Max 90 days in advance
-    const nowUtc = new Date(Date.UTC(istNow.year, istNow.month - 1, istNow.day));
-    const diffDays = Math.round((apptDateObj - nowUtc) / (1000 * 60 * 60 * 24));
-    if (diffDays > 90) {
-      return error(res, 'Appointments can only be booked up to 90 days in advance.', 400);
     }
 
     // If today in IST, ensure time slot has not already passed
@@ -297,36 +304,36 @@ const bookAppointment = async (req, res, next) => {
       }
     }
 
-    // 7. Atomic Concurrency Lock: Prevents simultaneous double bookings
-    const lockKey = `${rawDate}_${rawSlot.toUpperCase()}_${parsedDoctorId}`;
+    // 7. Atomic Concurrency Lock for (Doctor + Date + Slot)
+    const lockKey = `${parsedDoctorId}_${rawDate}_${rawSlot.toUpperCase()}`;
     const releaseLock = await acquireSlotLock(lockKey);
 
     try {
-      // Re-verify slot availability inside atomic lock
-      if (parsedDoctorId > 0) {
-        const isAlreadyBooked = store.appointments.some(a =>
-          (a.appointment_date === rawDate || a.appointmentDate === rawDate) &&
-          (a.time_slot || a.timeSlot || '').trim().toUpperCase() === rawSlot.toUpperCase() &&
-          (a.doctor_id === parsedDoctorId || a.doctorId === parsedDoctorId) &&
-          a.status !== 'CANCELLED' &&
-          a.is_active !== false
-        );
+      // In-memory duplicate check
+      const isAlreadyTaken = store.appointments.some(a =>
+        a.is_active !== false &&
+        a.status !== 'CANCELLED' &&
+        (a.appointment_date === rawDate || a.appointmentDate === rawDate) &&
+        (a.time_slot || a.timeSlot || '').toUpperCase() === rawSlot.toUpperCase() &&
+        (parsedDoctorId === 0 ? true : (a.doctor_id === parsedDoctorId || a.doctorId === parsedDoctorId))
+      );
 
-        if (isAlreadyBooked) {
-          return error(res, `This time slot (${rawSlot}) is already booked for Dr. ${doctorName} on ${rawDate}. Please choose another time slot.`, 409);
-        }
-      } else {
-        // "Any Available Doctor" (id 0): Dynamically allocate first available doctor on duty
+      if (isAlreadyTaken) {
+        return error(res, `This time slot (${rawSlot}) is already booked for ${rawDate}. Please select another slot.`, 409);
+      }
+
+      // If Any Doctor (0), assign first free doctor
+      if (parsedDoctorId === 0) {
         const activeDoctors = store.doctors.filter(d => d.active !== false && d.is_active !== false);
-        const onDutyDoctors = activeDoctors.filter(d => getDoctorDaySlots(d, dayOfWeek).includes(rawSlot));
-
-        const freeDoctor = onDutyDoctors.find(doc => {
+        const freeDoctor = activeDoctors.find(d => {
+          const docSlots = getDoctorDaySlots(d, dayOfWeek);
+          if (!docSlots.includes(rawSlot)) return false;
           return !store.appointments.some(a =>
-            (a.appointment_date === rawDate || a.appointmentDate === rawDate) &&
-            (a.time_slot || a.timeSlot || '').trim().toUpperCase() === rawSlot.toUpperCase() &&
-            (a.doctor_id === doc.id || a.doctorId === doc.id) &&
+            a.is_active !== false &&
             a.status !== 'CANCELLED' &&
-            a.is_active !== false
+            (a.appointment_date === rawDate || a.appointmentDate === rawDate) &&
+            (a.time_slot || a.timeSlot || '').toUpperCase() === rawSlot.toUpperCase() &&
+            (a.doctor_id === d.id || a.doctorId === d.id)
           );
         });
 
@@ -342,93 +349,145 @@ const bookAppointment = async (req, res, next) => {
 
       const totalPrice = doctorFee + servicePrice;
 
-      // 8. Collision-free, cryptographically unique booking reference (8 hex chars + timestamp)
+      // 8. Collision-free, cryptographically unique booking reference
       const randomHex = crypto.randomBytes(4).toString('hex').toUpperCase();
       const timeHash = Date.now().toString(36).toUpperCase();
       const bookingReference = `APT-${istNow.year}-${randomHex}-${timeHash}`;
-      const newId = store.appointments.length > 0 ? Math.max(...store.appointments.map(a => a.id)) + 1 : 1;
 
-      // 9. Patient Record Lookup / Creation
-      let patient = store.patients.find(p => p.phone === validPhone);
-      if (!patient) {
-        patient = {
-          id: store.patients.length > 0 ? Math.max(...store.patients.map(p => p.id)) + 1 : 1,
-          firstName: fullName.split(' ')[0],
-          lastName: fullName.split(' ').slice(1).join(' ') || '',
-          fullName: fullName,
-          full_name: fullName,
-          phone: validPhone,
-          email: cleanEmail || '',
-          address: 'Not recorded',
-          bloodGroup: 'Not recorded',
-          medicalHistory: 'Not recorded',
-          createdAt: new Date().toISOString()
-        };
-        store.patients.unshift(patient);
-      }
+      let finalId = 0;
+      let newAppointment = null;
 
-      // 10. Normalized Appointment Record
-      const newAppointment = {
-        id: newId,
-        appointmentNumber: bookingReference,
-        appointmentCode: bookingReference,
-        bookingReference: bookingReference,
-        booking_reference: bookingReference,
-        patientId: patient.id,
-        patient_id: patient.id,
-        patientName: fullName,
-        patient_name: fullName,
-        patientPhone: validPhone,
-        patient_phone: validPhone,
-        patientEmail: cleanEmail || null,
-        doctorId: parsedDoctorId,
-        doctor_id: parsedDoctorId,
-        doctorName: doctorName,
-        doctor_name: doctorName,
-        doctorSpecialization: doctorSpec,
-        serviceId: parsedServiceId,
-        service_id: parsedServiceId,
-        serviceName: serviceName,
-        service_name: serviceName,
-        servicePrice: servicePrice,
-        serviceDurationMinutes: serviceDuration,
-        appointmentDate: rawDate,
-        appointment_date: rawDate,
-        timeSlot: rawSlot,
-        time_slot: rawSlot,
-        status: 'PENDING',
-        totalPrice: totalPrice,
-        total_price: totalPrice,
-        notes: cleanNotes,
-        createdAt: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        is_active: true
-      };
-
-      // Save atomically to store
-      store.appointments.unshift(newAppointment);
-      saveStore();
-
-      // 11. Database Transaction with Unique Constraint & Duplicate Key Catching
+      // 9. Authoritative MySQL Insert when Connected
       if (getIsDbConnected()) {
         try {
-          await query(
+          // Find or create patient in MySQL
+          let patientId = null;
+          const patRows = await query('SELECT id FROM patients WHERE phone = ? LIMIT 1', [validPhone]);
+          if (patRows && patRows.length > 0) {
+            patientId = patRows[0].id;
+          } else {
+            const patInsert = await query(
+              'INSERT INTO patients (full_name, phone, email, address, blood_group, medical_history) VALUES (?, ?, ?, ?, ?, ?)',
+              [fullName, validPhone, cleanEmail || null, 'Not recorded', 'Not recorded', 'Not recorded']
+            );
+            patientId = patInsert.insertId;
+          }
+
+          // Insert appointment into MySQL
+          const apptResult = await query(
             `INSERT INTO appointments 
              (booking_reference, patient_id, doctor_id, service_id, appointment_date, time_slot, status, total_price, notes) 
              VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?, ?)`,
-            [bookingReference, patient.id, parsedDoctorId, parsedServiceId, rawDate, rawSlot, totalPrice, cleanNotes || null]
+            [bookingReference, patientId, parsedDoctorId, parsedServiceId, rawDate, rawSlot, totalPrice, cleanNotes || null]
           );
+
+          finalId = apptResult.insertId;
+
+          newAppointment = {
+            id: finalId,
+            appointmentNumber: bookingReference,
+            appointmentCode: bookingReference,
+            bookingReference: bookingReference,
+            booking_reference: bookingReference,
+            patientId,
+            patient_id: patientId,
+            patientName: fullName,
+            patient_name: fullName,
+            patientPhone: validPhone,
+            patient_phone: validPhone,
+            patientEmail: cleanEmail || null,
+            doctorId: parsedDoctorId,
+            doctor_id: parsedDoctorId,
+            doctorName: doctorName,
+            doctor_name: doctorName,
+            doctorSpecialization: doctorSpec,
+            serviceId: parsedServiceId,
+            service_id: parsedServiceId,
+            serviceName: serviceName,
+            service_name: serviceName,
+            servicePrice: servicePrice,
+            serviceDurationMinutes: serviceDuration,
+            appointmentDate: rawDate,
+            appointment_date: rawDate,
+            timeSlot: rawSlot,
+            time_slot: rawSlot,
+            status: 'PENDING',
+            totalPrice: totalPrice,
+            total_price: totalPrice,
+            notes: cleanNotes,
+            createdAt: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            is_active: true
+          };
         } catch (dbErr) {
           if (dbErr.code === 'ER_DUP_ENTRY' || dbErr.errno === 1062) {
-            store.appointments = store.appointments.filter(a => a.id !== newId);
-            saveStore();
             return error(res, `This time slot (${rawSlot}) was just reserved by another patient. Please choose another slot.`, 409);
           }
-          console.warn('MySQL async sync notice:', dbErr.message);
+          console.warn('MySQL direct booking error:', dbErr.message);
+          throw dbErr;
         }
+      } else {
+        // Fallback for offline local dev / tests without active DB
+        let patient = store.patients.find(p => p.phone === validPhone);
+        if (!patient) {
+          patient = {
+            id: store.patients.length > 0 ? Math.max(...store.patients.map(p => p.id)) + 1 : 1,
+            firstName: fullName.split(' ')[0],
+            lastName: fullName.split(' ').slice(1).join(' ') || '',
+            fullName: fullName,
+            full_name: fullName,
+            phone: validPhone,
+            email: cleanEmail || '',
+            address: 'Not recorded',
+            bloodGroup: 'Not recorded',
+            medicalHistory: 'Not recorded',
+            createdAt: new Date().toISOString()
+          };
+          store.patients.unshift(patient);
+        }
+
+        finalId = store.appointments.length > 0 ? Math.max(...store.appointments.map(a => a.id)) + 1 : 1;
+        newAppointment = {
+          id: finalId,
+          appointmentNumber: bookingReference,
+          appointmentCode: bookingReference,
+          bookingReference: bookingReference,
+          booking_reference: bookingReference,
+          patientId: patient.id,
+          patient_id: patient.id,
+          patientName: fullName,
+          patient_name: fullName,
+          patientPhone: validPhone,
+          patient_phone: validPhone,
+          patientEmail: cleanEmail || null,
+          doctorId: parsedDoctorId,
+          doctor_id: parsedDoctorId,
+          doctorName: doctorName,
+          doctor_name: doctorName,
+          doctorSpecialization: doctorSpec,
+          serviceId: parsedServiceId,
+          service_id: parsedServiceId,
+          serviceName: serviceName,
+          service_name: serviceName,
+          servicePrice: servicePrice,
+          serviceDurationMinutes: serviceDuration,
+          appointmentDate: rawDate,
+          appointment_date: rawDate,
+          timeSlot: rawSlot,
+          time_slot: rawSlot,
+          status: 'PENDING',
+          totalPrice: totalPrice,
+          total_price: totalPrice,
+          notes: cleanNotes,
+          createdAt: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          is_active: true
+        };
+        store.appointments.unshift(newAppointment);
+        saveStore();
       }
 
-      // 12. Audit Logging
+      // 10. Audit Logging
       await logAuditEvent({
         actor: validPhone,
         action: 'APPOINTMENT_REQUESTED',
@@ -437,7 +496,7 @@ const bookAppointment = async (req, res, next) => {
         details: `New appointment requested by ${fullName} for Dr. ${doctorName} on ${rawDate} at ${rawSlot} (Ref: ${bookingReference})`
       });
 
-      // 13. Notification Dispatcher
+      // 11. Notification Dispatcher
       let notifResult = null;
       try {
         notifResult = await notificationService.sendBookingConfirmation(newAppointment);
@@ -482,11 +541,97 @@ const bookAppointment = async (req, res, next) => {
 const searchAppointments = async (req, res, next) => {
   try {
     const { status, doctorId, startDate, endDate, query: searchParam, page = 0, size = 15 } = req.query;
-    const store = getStore();
-
     const pageNum = Math.max(0, parseInt(page, 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(size, 10)));
 
+    // 1. Authoritative MySQL Search
+    if (getIsDbConnected()) {
+      try {
+        let whereClauses = ['a.is_active = TRUE'];
+        const params = [];
+
+        if (status) {
+          whereClauses.push('a.status = ?');
+          params.push(status.toUpperCase());
+        }
+        if (doctorId && doctorId !== '0') {
+          whereClauses.push('a.doctor_id = ?');
+          params.push(parseInt(doctorId, 10));
+        }
+        if (startDate) {
+          whereClauses.push('a.appointment_date >= ?');
+          params.push(startDate);
+        }
+        if (endDate) {
+          whereClauses.push('a.appointment_date <= ?');
+          params.push(endDate);
+        }
+        if (searchParam && searchParam.trim()) {
+          whereClauses.push('(p.full_name LIKE ? OR p.phone LIKE ? OR a.booking_reference LIKE ?)');
+          const q = `%${searchParam.trim()}%`;
+          params.push(q, q, q);
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        const countQuery = `
+          SELECT COUNT(*) as total 
+          FROM appointments a
+          LEFT JOIN patients p ON a.patient_id = p.id
+          ${whereSql}
+        `;
+        const countRows = await query(countQuery, params);
+        const totalElements = countRows?.[0]?.total !== undefined ? Number(countRows[0].total) : 0;
+        const totalPages = Math.ceil(totalElements / pageSize) || 1;
+
+        const selectQuery = `
+          SELECT 
+            a.id,
+            a.booking_reference as appointmentNumber,
+            a.booking_reference as appointmentCode,
+            a.booking_reference as bookingReference,
+            a.patient_id as patientId,
+            COALESCE(p.full_name, 'Patient') as patientName,
+            COALESCE(p.phone, '') as patientPhone,
+            p.email as patientEmail,
+            a.doctor_id as doctorId,
+            COALESCE(d.name, 'Any Available Doctor') as doctorName,
+            d.specialization as doctorSpecialization,
+            a.service_id as serviceId,
+            COALESCE(s.name, 'General Consultation') as serviceName,
+            COALESCE(s.duration_minutes, 30) as serviceDurationMinutes,
+            DATE_FORMAT(a.appointment_date, '%Y-%m-%d') as appointmentDate,
+            a.time_slot as timeSlot,
+            a.status,
+            a.total_price as totalPrice,
+            a.notes,
+            a.cancellation_reason as cancellationReason,
+            a.created_at as createdAt
+          FROM appointments a
+          LEFT JOIN patients p ON a.patient_id = p.id
+          LEFT JOIN doctors d ON a.doctor_id = d.id
+          LEFT JOIN services s ON a.service_id = s.id
+          ${whereSql}
+          ORDER BY a.id DESC
+          LIMIT ? OFFSET ?
+        `;
+
+        const rows = await query(selectQuery, [...params, pageSize, pageNum * pageSize]);
+
+        return success(res, {
+          content: rows || [],
+          totalElements,
+          totalPages,
+          page: pageNum,
+          size: pageSize
+        }, 'Appointments retrieved from MySQL database.');
+      } catch (dbErr) {
+        console.warn('MySQL searchAppointments error:', dbErr.message);
+      }
+    }
+
+    // 2. Local memory fallback
+    const store = getStore();
     let list = store.appointments.filter(a => a.is_active !== false);
 
     if (status) {
@@ -533,6 +678,49 @@ const searchAppointments = async (req, res, next) => {
 const getAppointmentById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
+
+    // 1. Authoritative MySQL Read
+    if (getIsDbConnected()) {
+      try {
+        const rows = await query(`
+          SELECT 
+            a.id,
+            a.booking_reference as appointmentNumber,
+            a.booking_reference as appointmentCode,
+            a.booking_reference as bookingReference,
+            a.patient_id as patientId,
+            COALESCE(p.full_name, 'Patient') as patientName,
+            COALESCE(p.phone, '') as patientPhone,
+            p.email as patientEmail,
+            a.doctor_id as doctorId,
+            COALESCE(d.name, 'Any Available Doctor') as doctorName,
+            d.specialization as doctorSpecialization,
+            a.service_id as serviceId,
+            COALESCE(s.name, 'General Consultation') as serviceName,
+            COALESCE(s.duration_minutes, 30) as serviceDurationMinutes,
+            DATE_FORMAT(a.appointment_date, '%Y-%m-%d') as appointmentDate,
+            a.time_slot as timeSlot,
+            a.status,
+            a.total_price as totalPrice,
+            a.notes,
+            a.cancellation_reason as cancellationReason,
+            a.created_at as createdAt
+          FROM appointments a
+          LEFT JOIN patients p ON a.patient_id = p.id
+          LEFT JOIN doctors d ON a.doctor_id = d.id
+          LEFT JOIN services s ON a.service_id = s.id
+          WHERE a.id = ? LIMIT 1
+        `, [id]);
+
+        if (rows && rows.length > 0) {
+          return success(res, rows[0], 'Appointment details retrieved from MySQL.');
+        }
+      } catch (dbErr) {
+        console.warn('MySQL getAppointmentById error:', dbErr.message);
+      }
+    }
+
+    // 2. Local memory fallback
     const store = getStore();
     const appt = store.appointments.find(a => a.id === id);
 
@@ -554,7 +742,6 @@ const updateStatus = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const { status, reason, notes } = req.body;
-    const store = getStore();
 
     const validStatuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
     if (!status || !validStatuses.includes(status.toUpperCase())) {
@@ -564,6 +751,50 @@ const updateStatus = async (req, res, next) => {
     const targetStatus = status.toUpperCase();
     const noteText = reason || notes || `Status updated to ${targetStatus}`;
 
+    // 1. Authoritative MySQL Update
+    if (getIsDbConnected()) {
+      try {
+        const rows = await query('SELECT * FROM appointments WHERE id = ? LIMIT 1', [id]);
+        if (!rows || rows.length === 0) {
+          return error(res, `Appointment #${id} not found.`, 404);
+        }
+        const prevStatus = rows[0].status;
+
+        await query(
+          'UPDATE appointments SET status = ?, cancellation_reason = ? WHERE id = ?',
+          [targetStatus, targetStatus === 'CANCELLED' ? noteText : null, id]
+        );
+
+        await query(
+          'INSERT INTO appointment_status_history (appointment_id, old_status, new_status, changed_by, notes) VALUES (?, ?, ?, ?, ?)',
+          [id, prevStatus, targetStatus, req.user?.username || 'STAFF', noteText]
+        );
+
+        const updatedRows = await query('SELECT * FROM appointments WHERE id = ?', [id]);
+        const apptRecord = updatedRows[0] || rows[0];
+
+        await logAuditEvent({
+          actor: req.user?.username || 'STAFF',
+          action: 'APPOINTMENT_STATUS_UPDATE',
+          resource: 'APPOINTMENTS',
+          ipAddress: req.ip,
+          details: `Appointment #${id} changed from ${prevStatus} to ${targetStatus} in MySQL`
+        });
+
+        try {
+          await notificationService.sendStatusUpdateNotification(apptRecord, targetStatus, noteText);
+        } catch (notifErr) {
+          console.warn('Status notification dispatch notice:', notifErr.message);
+        }
+
+        return success(res, apptRecord, `Appointment status updated to ${targetStatus} in MySQL database.`);
+      } catch (dbErr) {
+        console.warn('MySQL updateStatus error:', dbErr.message);
+      }
+    }
+
+    // 2. Local memory fallback
+    const store = getStore();
     const appt = store.appointments.find(a => a.id === id);
     if (!appt) {
       return error(res, `Appointment #${id} not found.`, 404);
@@ -575,7 +806,6 @@ const updateStatus = async (req, res, next) => {
     appt.updated_at = new Date().toISOString();
     saveStore();
 
-    // Audit Logging
     await logAuditEvent({
       actor: req.user?.username || 'STAFF',
       action: 'APPOINTMENT_STATUS_UPDATE',
@@ -584,16 +814,6 @@ const updateStatus = async (req, res, next) => {
       details: `Appointment #${id} (Ref: ${appt.bookingReference || appt.appointmentNumber}) changed from ${previousStatus} to ${targetStatus}`
     });
 
-    // Sync to MySQL if connected
-    if (getIsDbConnected()) {
-      try {
-        await query('UPDATE appointments SET status = ?, cancellation_reason = ? WHERE id = ?', [targetStatus, noteText, id]);
-      } catch (err) {
-        console.warn('MySQL update status notice:', err.message);
-      }
-    }
-
-    // Trigger status update alert
     try {
       await notificationService.sendStatusUpdateNotification(appt, targetStatus, noteText);
     } catch (notifErr) {
@@ -607,37 +827,53 @@ const updateStatus = async (req, res, next) => {
 };
 
 /**
- * Delete Appointment
- * DELETE /api/v1/appointments/:id
+ * Reschedule Appointment to New Date & Slot
+ * PATCH /api/v1/appointments/:id/reschedule
  */
-const deleteAppointment = async (req, res, next) => {
+const reschedule = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const store = getStore();
-    const appt = store.appointments.find(a => a.id === id);
+    const { appointmentDate, date, timeSlot, slot } = req.body;
 
-    store.appointments = store.appointments.filter(a => a.id !== id);
-    saveStore();
+    const newDate = (appointmentDate || date || '').trim();
+    const newSlot = (timeSlot || slot || '').trim();
 
-    if (appt) {
-      await logAuditEvent({
-        actor: req.user?.username || 'STAFF',
-        action: 'APPOINTMENT_DELETED',
-        resource: 'APPOINTMENTS',
-        ipAddress: req.ip,
-        details: `Appointment #${id} (Ref: ${appt.bookingReference || appt.appointmentNumber}) was removed`
-      });
+    if (!newDate || !newSlot) {
+      return error(res, 'New appointment date and time slot are required.', 400);
     }
 
+    // Authoritative MySQL Update
     if (getIsDbConnected()) {
       try {
-        await query('UPDATE appointments SET is_active = FALSE WHERE id = ?', [id]);
-      } catch (err) {
-        console.warn('MySQL delete notice:', err.message);
+        const rows = await query('SELECT * FROM appointments WHERE id = ? LIMIT 1', [id]);
+        if (!rows || rows.length === 0) return error(res, `Appointment #${id} not found.`, 404);
+
+        await query('UPDATE appointments SET appointment_date = ?, time_slot = ? WHERE id = ?', [newDate, newSlot, id]);
+        const updated = await query('SELECT * FROM appointments WHERE id = ?', [id]);
+        return success(res, updated[0], 'Appointment rescheduled successfully in MySQL database.');
+      } catch (dbErr) {
+        if (dbErr.code === 'ER_DUP_ENTRY' || dbErr.errno === 1062) {
+          return error(res, 'The selected slot is already booked for this doctor and date.', 409);
+        }
+        console.warn('MySQL reschedule error:', dbErr.message);
       }
     }
 
-    return success(res, null, `Appointment #${id} removed successfully.`);
+    // Local memory fallback
+    const store = getStore();
+    const appt = store.appointments.find(a => a.id === id);
+    if (!appt) {
+      return error(res, `Appointment #${id} not found.`, 404);
+    }
+
+    appt.appointmentDate = newDate;
+    appt.appointment_date = newDate;
+    appt.timeSlot = newSlot;
+    appt.time_slot = newSlot;
+    appt.updated_at = new Date().toISOString();
+    saveStore();
+
+    return success(res, appt, 'Appointment rescheduled successfully.');
   } catch (err) {
     next(err);
   }
@@ -649,5 +885,5 @@ module.exports = {
   searchAppointments,
   getAppointmentById,
   updateStatus,
-  deleteAppointment
+  reschedule
 };

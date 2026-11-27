@@ -47,11 +47,16 @@ app.use(morgan('dev'));
 
 // System Healthcheck Endpoint
 app.get('/api/health', (req, res) => {
+  const isDb = getIsDbConnected();
+  const isAws = Boolean(process.env.DB_HOST && process.env.DB_HOST.includes('rds.amazonaws.com'));
   res.status(200).json({
     status: 'UP',
     service: 'Akansha Dental Clinic REST API',
     version: '1.0.0',
-    database: getIsDbConnected() ? 'CONNECTED' : 'STANDBY_MEMORY_FALLBACK',
+    database: isDb ? 'CONNECTED' : 'STANDBY_MEMORY_FALLBACK',
+    engine: isDb ? (isAws ? 'MySQL (AWS RDS Managed)' : 'MySQL (Managed Cloud DB)') : 'In-Memory / Atomic JSON Fallback',
+    persistence: isDb ? 'DURABLE_MANAGED_DATABASE' : 'EPHEMERAL_STANDBY',
+    host: isDb ? (process.env.DB_HOST || 'localhost') : null,
     timestamp: new Date().toISOString()
   });
 });

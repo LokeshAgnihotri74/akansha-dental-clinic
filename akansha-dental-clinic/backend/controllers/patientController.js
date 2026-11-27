@@ -21,11 +21,46 @@ const normalizePatient = (p) => ({
 const getPatients = async (req, res, next) => {
   try {
     const { search, page = 0, size = 10 } = req.query;
-    const store = getStore();
-
     const pageNum = Math.max(0, parseInt(page, 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(size, 10)));
 
+    // 1. Authoritative MySQL Read when connected
+    if (getIsDbConnected()) {
+      try {
+        let whereClause = '';
+        const params = [];
+
+        if (search && search.trim()) {
+          whereClause = 'WHERE full_name LIKE ? OR phone LIKE ? OR email LIKE ?';
+          const q = `%${search.trim()}%`;
+          params.push(q, q, q);
+        }
+
+        const countRows = await query(`SELECT COUNT(*) as total FROM patients ${whereClause}`, params);
+        const totalElements = countRows?.[0]?.total !== undefined ? Number(countRows[0].total) : 0;
+        const totalPages = Math.ceil(totalElements / pageSize) || 1;
+
+        const rows = await query(
+          `SELECT * FROM patients ${whereClause} ORDER BY id DESC LIMIT ? OFFSET ?`,
+          [...params, pageSize, pageNum * pageSize]
+        );
+
+        const content = (rows || []).map(normalizePatient);
+
+        return success(res, {
+          content,
+          totalElements,
+          totalPages,
+          page: pageNum,
+          size: pageSize
+        }, 'Patients directory retrieved from MySQL database.');
+      } catch (dbErr) {
+        console.warn('MySQL getPatients query error:', dbErr.message);
+      }
+    }
+
+    // 2. Local memory fallback (offline dev / test mode)
+    const store = getStore();
     let list = (store.patients || []).map(normalizePatient);
 
     if (search) {
@@ -56,6 +91,19 @@ const getPatients = async (req, res, next) => {
 const getPatientById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
+
+    // 1. Authoritative MySQL Read
+    if (getIsDbConnected()) {
+      try {
+        const rows = await query('SELECT * FROM patients WHERE id = ? LIMIT 1', [id]);
+        if (!rows || rows.length === 0) return error(res, `Patient #${id} not found`, 404);
+        return success(res, normalizePatient(rows[0]), 'Patient record retrieved from MySQL database.');
+      } catch (dbErr) {
+        console.warn('MySQL getPatientById query error:', dbErr.message);
+      }
+    }
+
+    // 2. Local memory fallback
     const store = getStore();
     const pat = store.patients.find(p => p.id === id);
     if (!pat) return error(res, `Patient #${id} not found`, 404);
@@ -68,11 +116,45 @@ const getPatientById = async (req, res, next) => {
 const createPatient = async (req, res, next) => {
   try {
     const { firstName, lastName, fullName, phone, email, address, bloodGroup, medicalHistory } = req.body;
-    const store = getStore();
-
     const name = fullName || `${firstName || ''} ${lastName || ''}`.trim();
     if (!name || !phone) return error(res, 'Patient name and contact phone are required.', 400);
 
+    const cleanPhone = phone.trim();
+    const cleanEmail = email ? email.trim() : null;
+    const cleanAddress = address && address.trim() ? address.trim() : 'Not recorded';
+    const cleanBlood = bloodGroup && bloodGroup.trim() ? bloodGroup.trim() : 'Not recorded';
+    const cleanHistory = medicalHistory && medicalHistory.trim() ? medicalHistory.trim() : 'Not recorded';
+
+    // 1. Authoritative MySQL Insert
+    if (getIsDbConnected()) {
+      try {
+        const result = await query(
+          'INSERT INTO patients (full_name, phone, email, address, blood_group, medical_history) VALUES (?, ?, ?, ?, ?, ?)',
+          [name, cleanPhone, cleanEmail, cleanAddress, cleanBlood, cleanHistory]
+        );
+
+        const newId = result.insertId;
+        const rows = await query('SELECT * FROM patients WHERE id = ?', [newId]);
+
+        await logAuditEvent({
+          actor: req.user?.username || 'STAFF',
+          action: 'PATIENT_REGISTERED',
+          resource: 'PATIENTS',
+          ipAddress: req.ip,
+          details: `New patient registered in MySQL: ${name} (${cleanPhone})`
+        });
+
+        return success(res, normalizePatient(rows[0]), 'Patient created successfully in database.', 201);
+      } catch (dbErr) {
+        if (dbErr.code === 'ER_DUP_ENTRY' || dbErr.errno === 1062) {
+          return error(res, `A patient with phone number ${cleanPhone} already exists.`, 409);
+        }
+        console.warn('MySQL createPatient insert error:', dbErr.message);
+      }
+    }
+
+    // 2. Local memory fallback
+    const store = getStore();
     const newId = store.patients.length > 0 ? Math.max(...store.patients.map(p => p.id)) + 1 : 1;
 
     const newPat = {
@@ -81,11 +163,11 @@ const createPatient = async (req, res, next) => {
       lastName: lastName || name.split(' ').slice(1).join(' ') || '',
       fullName: name,
       full_name: name,
-      phone: phone.trim(),
-      email: email ? email.trim() : '',
-      address: address ? address.trim() : '', // No invented address
-      bloodGroup: bloodGroup ? bloodGroup.trim() : null, // No invented blood group
-      medicalHistory: medicalHistory ? medicalHistory.trim() : '',
+      phone: cleanPhone,
+      email: cleanEmail || '',
+      address: cleanAddress,
+      bloodGroup: cleanBlood,
+      medicalHistory: cleanHistory,
       createdAt: new Date().toISOString()
     };
 
@@ -97,19 +179,8 @@ const createPatient = async (req, res, next) => {
       action: 'PATIENT_REGISTERED',
       resource: 'PATIENTS',
       ipAddress: req.ip,
-      details: `New patient registered: ${name} (${phone})`
+      details: `New patient registered: ${name} (${cleanPhone})`
     });
-
-    if (getIsDbConnected()) {
-      try {
-        await query(
-          'INSERT INTO patients (full_name, phone, email, address, blood_group, medical_history) VALUES (?, ?, ?, ?, ?, ?)',
-          [name, phone.trim(), newPat.email || null, newPat.address || null, newPat.bloodGroup || null, newPat.medicalHistory || null]
-        );
-      } catch (dbErr) {
-        console.warn('MySQL patient insert notice:', dbErr.message);
-      }
-    }
 
     return success(res, normalizePatient(newPat), 'Patient created successfully.', 201);
   } catch (err) {
@@ -121,18 +192,62 @@ const updatePatient = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const { firstName, lastName, fullName, phone, email, address, bloodGroup, medicalHistory } = req.body;
-    const store = getStore();
+    const name = fullName || (firstName || lastName ? `${firstName || ''} ${lastName || ''}`.trim() : undefined);
 
+    // 1. Authoritative MySQL Update
+    if (getIsDbConnected()) {
+      try {
+        const existing = await query('SELECT * FROM patients WHERE id = ?', [id]);
+        if (!existing || existing.length === 0) return error(res, `Patient #${id} not found`, 404);
+
+        await query(
+          `UPDATE patients 
+           SET full_name = COALESCE(?, full_name), 
+               phone = COALESCE(?, phone), 
+               email = COALESCE(?, email), 
+               address = COALESCE(?, address), 
+               blood_group = COALESCE(?, blood_group), 
+               medical_history = COALESCE(?, medical_history) 
+           WHERE id = ?`,
+          [
+            name || null,
+            phone ? phone.trim() : null,
+            email !== undefined ? (email ? email.trim() : null) : null,
+            address !== undefined ? (address ? address.trim() : 'Not recorded') : null,
+            bloodGroup !== undefined ? (bloodGroup ? bloodGroup.trim() : 'Not recorded') : null,
+            medicalHistory !== undefined ? (medicalHistory ? medicalHistory.trim() : 'Not recorded') : null,
+            id
+          ]
+        );
+
+        const rows = await query('SELECT * FROM patients WHERE id = ?', [id]);
+
+        await logAuditEvent({
+          actor: req.user?.username || 'STAFF',
+          action: 'PATIENT_UPDATED',
+          resource: 'PATIENTS',
+          ipAddress: req.ip,
+          details: `Patient #${id} updated in MySQL`
+        });
+
+        return success(res, normalizePatient(rows[0]), 'Patient updated successfully in database.');
+      } catch (dbErr) {
+        console.warn('MySQL updatePatient error:', dbErr.message);
+      }
+    }
+
+    // 2. Local memory fallback
+    const store = getStore();
     const pat = store.patients.find(p => p.id === id);
     if (!pat) return error(res, `Patient #${id} not found`, 404);
 
-    if (fullName) pat.fullName = fullName.trim();
+    if (name) pat.fullName = name.trim();
     if (firstName) pat.firstName = firstName.trim();
     if (lastName) pat.lastName = lastName.trim();
     if (phone) pat.phone = phone.trim();
     if (email !== undefined) pat.email = email.trim();
     if (address !== undefined) pat.address = address.trim();
-    if (bloodGroup !== undefined) pat.bloodGroup = bloodGroup ? bloodGroup.trim() : null;
+    if (bloodGroup !== undefined) pat.bloodGroup = bloodGroup ? bloodGroup.trim() : 'Not recorded';
     if (medicalHistory !== undefined) pat.medicalHistory = medicalHistory.trim();
 
     pat.updatedAt = new Date().toISOString();

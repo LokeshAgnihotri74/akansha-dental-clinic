@@ -1,3 +1,4 @@
+const { query, getIsDbConnected } = require('../config/db');
 const { getStore, saveStore } = require('../database/store');
 const { success, error } = require('../utils/responseHelper');
 
@@ -16,6 +17,19 @@ const DEFAULT_SETTINGS = [
 
 const getSettings = async (req, res, next) => {
   try {
+    // 1. Authoritative MySQL Read
+    if (getIsDbConnected()) {
+      try {
+        const rows = await query('SELECT id, setting_key as `key`, setting_value as `value`, description FROM settings ORDER BY id ASC');
+        if (rows && rows.length > 0) {
+          return success(res, rows, 'Clinic settings retrieved from MySQL database.');
+        }
+      } catch (dbErr) {
+        console.warn('MySQL getSettings error:', dbErr.message);
+      }
+    }
+
+    // 2. Local memory fallback
     const store = getStore();
     if (!store.settings || store.settings.length === 0) {
       store.settings = DEFAULT_SETTINGS;
@@ -36,6 +50,22 @@ const updateSetting = async (req, res, next) => {
       return error(res, 'Setting value is required.', 400);
     }
 
+    const valStr = String(value);
+
+    // 1. Authoritative MySQL Upsert
+    if (getIsDbConnected()) {
+      try {
+        await query(
+          'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+          [key, valStr]
+        );
+        return success(res, { key, value: valStr }, `Setting '${key}' updated successfully in MySQL database.`);
+      } catch (dbErr) {
+        console.warn('MySQL updateSetting error:', dbErr.message);
+      }
+    }
+
+    // 2. Local memory fallback
     const store = getStore();
     if (!store.settings || store.settings.length === 0) {
       store.settings = [...DEFAULT_SETTINGS];
@@ -43,18 +73,18 @@ const updateSetting = async (req, res, next) => {
 
     const item = store.settings.find(s => s.key === key);
     if (item) {
-      item.value = String(value);
+      item.value = valStr;
     } else {
       store.settings.push({
         id: store.settings.length + 1,
         key,
-        value: String(value),
+        value: valStr,
         description: `Custom configured key: ${key}`
       });
     }
 
     saveStore();
-    return success(res, { key, value }, `Setting '${key}' updated successfully.`);
+    return success(res, { key, value: valStr }, `Setting '${key}' updated successfully.`);
   } catch (err) {
     next(err);
   }
