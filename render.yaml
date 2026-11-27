@@ -20,3 +20,15 @@ services:
         value: "+91 8130 406 405"
       - key: CLINIC_EMAIL
         value: "support@akanshadental.com"
+      # Real Managed Database Connection (Render PostgreSQL, Neon, Supabase, or Aiven MySQL)
+      - key: DATABASE_URL
+        sync: false
+      # SMTP Email Configuration (Optional: Gmail, Brevo, Resend, or AWS SES)
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false

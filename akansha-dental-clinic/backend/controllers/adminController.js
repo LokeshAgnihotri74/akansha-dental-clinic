@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { getStore, saveStore } = require('../database/store');
 const { success, error } = require('../utils/responseHelper');
+const { logAuditEvent } = require('../services/auditService');
 
 /**
  * Get all administrators and clinical staff
@@ -81,6 +82,14 @@ const createAdmin = async (req, res, next) => {
     store.admins.push(newAdmin);
     saveStore();
 
+    await logAuditEvent({
+      actor: req.user?.username || 'SUPER_ADMIN',
+      action: 'STAFF_PROVISIONED',
+      resource: 'STAFF_MANAGEMENT',
+      ipAddress: req.ip,
+      details: `New staff account provisioned for ${newAdmin.fullName} (${newAdmin.email}) with role ${primaryRole}`
+    });
+
     const result = {
       id: newAdmin.id,
       username: newAdmin.username,
@@ -129,6 +138,14 @@ const updateAdminStatus = async (req, res, next) => {
     admin.updated_at = new Date().toISOString();
     saveStore();
 
+    await logAuditEvent({
+      actor: req.user?.username || 'SUPER_ADMIN',
+      action: 'STAFF_STATUS_UPDATED',
+      resource: 'STAFF_MANAGEMENT',
+      ipAddress: req.ip,
+      details: `Account for ${admin.fullName || admin.username} status set to ${admin.is_active ? 'ACTIVE' : 'LOCKED'}`
+    });
+
     return success(res, {
       id: admin.id,
       username: admin.username,
@@ -165,6 +182,14 @@ const resetAdminPassword = async (req, res, next) => {
     admin.updated_at = new Date().toISOString();
     saveStore();
 
+    await logAuditEvent({
+      actor: req.user?.username || 'SUPER_ADMIN',
+      action: 'STAFF_PASSWORD_RESET',
+      resource: 'STAFF_MANAGEMENT',
+      ipAddress: req.ip,
+      details: `Temporary password assigned to ${admin.fullName || admin.username} (forced first-login change active)`
+    });
+
     return success(res, {
       id: admin.id,
       username: admin.username,
@@ -200,6 +225,14 @@ const deleteAdmin = async (req, res, next) => {
 
     const deleted = store.admins.splice(index, 1)[0];
     saveStore();
+
+    await logAuditEvent({
+      actor: req.user?.username || 'SUPER_ADMIN',
+      action: 'STAFF_DELETED',
+      resource: 'STAFF_MANAGEMENT',
+      ipAddress: req.ip,
+      details: `Revoked access and deleted account for ${deleted.fullName || deleted.username}`
+    });
 
     return success(res, { id: deleted.id }, `Account for ${deleted.fullName || deleted.username} removed.`);
   } catch (err) {

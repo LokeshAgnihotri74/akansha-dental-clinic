@@ -1,6 +1,7 @@
 const { query, getIsDbConnected } = require('../config/db');
 const { getStore, saveStore } = require('../database/store');
 const { success, error } = require('../utils/responseHelper');
+const { logAuditEvent } = require('../services/auditService');
 
 const normalizePatient = (p) => ({
   id: p.id,
@@ -10,9 +11,9 @@ const normalizePatient = (p) => ({
   full_name: p.fullName || p.full_name || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
   phone: p.phone,
   email: p.email || '',
-  address: p.address || 'Bhopal, MP',
+  address: p.address || '', // Never fabricate clinical addresses
   dateOfBirth: p.dateOfBirth || p.date_of_birth || null,
-  bloodGroup: p.bloodGroup || p.blood_group || 'B+',
+  bloodGroup: p.bloodGroup || p.blood_group || null, // Never fabricate medical blood groups
   medicalHistory: p.medicalHistory || p.medical_history || '',
   createdAt: p.createdAt || p.created_at || new Date().toISOString()
 });
@@ -66,7 +67,7 @@ const getPatientById = async (req, res, next) => {
 
 const createPatient = async (req, res, next) => {
   try {
-    const { firstName, lastName, fullName, phone, email, address, medicalHistory } = req.body;
+    const { firstName, lastName, fullName, phone, email, address, bloodGroup, medicalHistory } = req.body;
     const store = getStore();
 
     const name = fullName || `${firstName || ''} ${lastName || ''}`.trim();
@@ -81,27 +82,36 @@ const createPatient = async (req, res, next) => {
       fullName: name,
       full_name: name,
       phone: phone.trim(),
-      email: email || '',
-      address: address || 'Bhopal, MP',
-      medicalHistory: medicalHistory || '',
+      email: email ? email.trim() : '',
+      address: address ? address.trim() : '', // No invented address
+      bloodGroup: bloodGroup ? bloodGroup.trim() : null, // No invented blood group
+      medicalHistory: medicalHistory ? medicalHistory.trim() : '',
       createdAt: new Date().toISOString()
     };
 
     store.patients.unshift(newPat);
     saveStore();
 
+    await logAuditEvent({
+      actor: req.user?.username || 'STAFF',
+      action: 'PATIENT_REGISTERED',
+      resource: 'PATIENTS',
+      ipAddress: req.ip,
+      details: `New patient registered: ${name} (${phone})`
+    });
+
     if (getIsDbConnected()) {
       try {
         await query(
-          'INSERT INTO patients (full_name, phone, email, medical_history) VALUES (?, ?, ?, ?)',
-          [name, phone.trim(), email || null, medicalHistory || null]
+          'INSERT INTO patients (full_name, phone, email, address, blood_group, medical_history) VALUES (?, ?, ?, ?, ?, ?)',
+          [name, phone.trim(), newPat.email || null, newPat.address || null, newPat.bloodGroup || null, newPat.medicalHistory || null]
         );
       } catch (dbErr) {
         console.warn('MySQL patient insert notice:', dbErr.message);
       }
     }
 
-    return success(res, normalizePatient(newPat), 'Patient registered successfully.', 201);
+    return success(res, normalizePatient(newPat), 'Patient created successfully.', 201);
   } catch (err) {
     next(err);
   }
@@ -110,14 +120,33 @@ const createPatient = async (req, res, next) => {
 const updatePatient = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
+    const { firstName, lastName, fullName, phone, email, address, bloodGroup, medicalHistory } = req.body;
     const store = getStore();
+
     const pat = store.patients.find(p => p.id === id);
     if (!pat) return error(res, `Patient #${id} not found`, 404);
 
-    Object.assign(pat, req.body);
+    if (fullName) pat.fullName = fullName.trim();
+    if (firstName) pat.firstName = firstName.trim();
+    if (lastName) pat.lastName = lastName.trim();
+    if (phone) pat.phone = phone.trim();
+    if (email !== undefined) pat.email = email.trim();
+    if (address !== undefined) pat.address = address.trim();
+    if (bloodGroup !== undefined) pat.bloodGroup = bloodGroup ? bloodGroup.trim() : null;
+    if (medicalHistory !== undefined) pat.medicalHistory = medicalHistory.trim();
+
+    pat.updatedAt = new Date().toISOString();
     saveStore();
 
-    return success(res, normalizePatient(pat), 'Patient record updated.');
+    await logAuditEvent({
+      actor: req.user?.username || 'STAFF',
+      action: 'PATIENT_UPDATED',
+      resource: 'PATIENTS',
+      ipAddress: req.ip,
+      details: `Patient #${id} updated (${pat.fullName || pat.phone})`
+    });
+
+    return success(res, normalizePatient(pat), 'Patient updated successfully.');
   } catch (err) {
     next(err);
   }

@@ -3,6 +3,7 @@ const { query, getIsDbConnected } = require('../config/db');
 const { getStore, saveStore } = require('../database/store');
 const { generateToken } = require('../utils/jwtHelper');
 const { success, error } = require('../utils/responseHelper');
+const { logAuditEvent } = require('../services/auditService');
 
 /**
  * Admin & Staff Login Handler
@@ -81,6 +82,15 @@ const login = async (req, res, next) => {
       phone: user.phone || '',
       mustChangePassword: mustChangePassword
     };
+
+    // Audit Login Event
+    await logAuditEvent({
+      actor: user.email || user.username,
+      action: 'AUTH_LOGIN_SUCCESS',
+      resource: 'AUTH',
+      ipAddress: req.ip,
+      details: `User ${user.fullName || user.username} logged in successfully (${roles.join(', ')})`
+    });
 
     return success(res, {
       accessToken: token,
@@ -183,6 +193,15 @@ const changePassword = async (req, res, next) => {
 
     saveStore();
 
+    // Audit Login Event
+    await logAuditEvent({
+      actor: user.email || user.username,
+      action: 'AUTH_LOGIN_SUCCESS',
+      resource: 'AUTH',
+      ipAddress: req.ip,
+      details: `User ${user.fullName || user.username} logged in successfully (${roles.join(', ')})`
+    });
+
     return success(res, {
       userId: user.id || user.userId,
       email: user.email,
@@ -234,6 +253,15 @@ const updateProfile = async (req, res, next) => {
     user.updatedAt = new Date().toISOString();
 
     saveStore();
+
+    // Audit Login Event
+    await logAuditEvent({
+      actor: user.email || user.username,
+      action: 'AUTH_LOGIN_SUCCESS',
+      resource: 'AUTH',
+      ipAddress: req.ip,
+      details: `User ${user.fullName || user.username} logged in successfully (${roles.join(', ')})`
+    });
 
     return success(res, {
       id: user.id || user.userId,

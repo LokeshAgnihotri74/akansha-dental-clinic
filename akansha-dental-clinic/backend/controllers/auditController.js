@@ -1,57 +1,44 @@
-const { getStore, saveStore } = require('../database/store');
+const { getStore } = require('../database/store');
+const { query, getIsDbConnected } = require('../config/db');
 const { success } = require('../utils/responseHelper');
 
-const DEFAULT_AUDIT_LOGS = [
-  {
-    id: 1,
-    actorUsername: 'admin@akanshadental.com',
-    action: 'SYSTEM_BOOTSTRAP',
-    resource: 'CORE_DATABASE',
-    ipAddress: '127.0.0.1',
-    details: 'System initialized with dual-mode persistent JSON & MySQL engine.',
-    timestamp: new Date(Date.now() - 3600000 * 24).toISOString()
-  },
-  {
-    id: 2,
-    actorUsername: 'admin@akanshadental.com',
-    action: 'CATALOG_SYNC',
-    resource: 'SERVICES_REGISTRY',
-    ipAddress: '127.0.0.1',
-    details: 'Expanded specialized dental treatments to 12 production procedures.',
-    timestamp: new Date(Date.now() - 3600000 * 5).toISOString()
-  },
-  {
-    id: 3,
-    actorUsername: 'admin@akanshadental.com',
-    action: 'ROSTER_UPDATE',
-    resource: 'DOCTORS_FACULTY',
-    ipAddress: '127.0.0.1',
-    details: 'Synchronized weekly morning & evening clinical OPD timings for dental surgeons.',
-    timestamp: new Date(Date.now() - 3600000 * 2).toISOString()
-  },
-  {
-    id: 4,
-    actorUsername: 'staff@akanshadental.com',
-    action: 'INQUIRY_REVIEW',
-    resource: 'PATIENT_LEADS',
-    ipAddress: '127.0.0.1',
-    details: 'Automated SMS dispatch triggered for incoming patient contact request.',
-    timestamp: new Date(Date.now() - 1800000).toISOString()
-  }
-];
-
+/**
+ * Retrieve verified, immutable audit trail records
+ * GET /api/v1/audit-logs?page=0&size=20
+ */
 const getAuditLogs = async (req, res, next) => {
   try {
-    const store = getStore();
-    if (!store.auditLogs) {
-      store.auditLogs = DEFAULT_AUDIT_LOGS;
-      saveStore();
+    const page = Math.max(0, parseInt(req.query.page, 10) || 0);
+    const size = Math.min(100, Math.max(1, parseInt(req.query.size, 10) || 20));
+
+    let list = [];
+
+    if (getIsDbConnected()) {
+      try {
+        const rows = await query('SELECT * FROM audit_logs ORDER BY id DESC LIMIT ? OFFSET ?', [size, page * size]);
+        if (rows && rows.length > 0) {
+          list = rows.map(r => ({
+            id: r.id,
+            actorUsername: r.actor_username,
+            actor_username: r.actor_username,
+            action: r.action,
+            resource: r.resource,
+            ipAddress: r.ip_address,
+            ip_address: r.ip_address,
+            details: r.details,
+            timestamp: r.timestamp || r.created_at
+          }));
+        }
+      } catch (dbErr) {
+        console.warn('DB audit read notice:', dbErr.message);
+      }
     }
 
-    const page = parseInt(req.query.page, 10) || 0;
-    const size = parseInt(req.query.size, 10) || 20;
+    if (list.length === 0) {
+      const store = getStore();
+      list = store.auditLogs || [];
+    }
 
-    const list = store.auditLogs || DEFAULT_AUDIT_LOGS;
     const totalElements = list.length;
     const paginated = list.slice(page * size, (page + 1) * size);
 

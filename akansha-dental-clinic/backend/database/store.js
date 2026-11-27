@@ -919,7 +919,7 @@ const INITIAL_DATA = {
       phone: '9826012345',
       email: 'sunita.verma@example.com',
       dateOfBirth: '1988-04-12',
-      bloodGroup: 'B+',
+      bloodGroup: null,
       medicalHistory: 'Mild tooth sensitivity in lower molar.',
       createdAt: new Date().toISOString()
     }
@@ -977,36 +977,149 @@ const INITIAL_DATA = {
       createdAt: new Date().toISOString(),
       created_at: new Date().toISOString()
     }
-  ]
+  ],
+  auditLogs: []
 };
 
-// Load or initialize store from disk
-let store = null;
-
-const loadStore = () => {
-  if (store) return store;
+// Directory for resilient rotating clinical data backups
+const BACKUP_DIR = path.join(__dirname, 'backups');
+if (!fs.existsSync(BACKUP_DIR)) {
   try {
-    if (fs.existsSync(STORE_PATH)) {
-      const content = fs.readFileSync(STORE_PATH, 'utf8');
-      store = JSON.parse(content);
-      console.log('📂 Loaded persistent clinic data store from:', STORE_PATH);
-    } else {
-      store = JSON.parse(JSON.stringify(INITIAL_DATA));
-      saveStore();
-      console.log('✨ Initialized new persistent clinic data store at:', STORE_PATH);
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  } catch (e) {
+    console.warn('Backup directory initialization notice:', e.message);
+  }
+}
+
+let store = null;
+let lastBackupTime = 0;
+
+/**
+ * Find the latest valid backup file in BACKUP_DIR
+ */
+const findLatestBackup = () => {
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) return null;
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.startsWith('clinic_data_backup_') && f.endsWith('.json'))
+      .sort()
+      .reverse();
+    for (const file of files) {
+      try {
+        const fullPath = path.join(BACKUP_DIR, file);
+        const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+        if (data && data.admins && data.doctors) {
+          return { path: fullPath, data };
+        }
+      } catch {
+        // try next backup
+      }
     }
   } catch (err) {
-    console.warn('⚠️ Error loading clinic data store, using defaults:', err.message);
-    store = JSON.parse(JSON.stringify(INITIAL_DATA));
+    console.warn('Backup lookup warning:', err.message);
   }
+  return null;
+};
+
+/**
+ * Prune older backups, keeping the most recent 10 backups
+ */
+const pruneBackups = () => {
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) return;
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.startsWith('clinic_data_backup_') && f.endsWith('.json'))
+      .sort();
+    if (files.length > 10) {
+      const toDelete = files.slice(0, files.length - 10);
+      for (const f of toDelete) {
+        try { fs.unlinkSync(path.join(BACKUP_DIR, f)); } catch {}
+      }
+    }
+  } catch {}
+};
+
+/**
+ * Load clinic data store from disk with zero-data-loss protection
+ */
+const loadStore = () => {
+  if (store) return store;
+
+  if (fs.existsSync(STORE_PATH)) {
+    try {
+      const content = fs.readFileSync(STORE_PATH, 'utf8');
+      store = JSON.parse(content);
+      if (!store.auditLogs) store.auditLogs = [];
+      console.log('📂 Loaded persistent clinic data store from:', STORE_PATH);
+      return store;
+    } catch (parseErr) {
+      console.error('CRITICAL: Clinic data JSON parse error:', parseErr.message);
+      // 1. Preserve corrupted file immediately so real data is never lost
+      const corruptPath = path.join(__dirname, `clinic_data.corrupted.${Date.now()}.json`);
+      try {
+        fs.copyFileSync(STORE_PATH, corruptPath);
+        console.error(`🛡️ Corrupted data preserved safely at: ${corruptPath}`);
+      } catch (cpErr) {
+        console.error('Failed to preserve corrupted file:', cpErr.message);
+      }
+
+      // 2. Attempt to restore from latest valid automated backup
+      const backup = findLatestBackup();
+      if (backup) {
+        console.warn(`🔄 Restoring clinic data from latest valid backup: ${backup.path}`);
+        store = backup.data;
+        if (!store.auditLogs) store.auditLogs = [];
+        saveStore();
+        return store;
+      }
+
+      console.error('❌ No valid backup found. Initializing with safety defaults.');
+      store = JSON.parse(JSON.stringify(INITIAL_DATA));
+      return store;
+    }
+  }
+
+  // File does not exist yet: check if a backup exists before falling back to seed
+  const backup = findLatestBackup();
+  if (backup) {
+    console.log(`🔄 Restoring from existing backup: ${backup.path}`);
+    store = backup.data;
+  } else {
+    store = JSON.parse(JSON.stringify(INITIAL_DATA));
+    console.log('✨ Initialized new clinic data store at:', STORE_PATH);
+  }
+
+  if (!store.auditLogs) store.auditLogs = [];
+  saveStore();
   return store;
 };
 
+/**
+ * Atomic save: writes to .tmp file then renames, preventing truncated writes on crash
+ */
 const saveStore = () => {
+  if (!store) return;
+  const tempPath = `${STORE_PATH}.tmp`;
   try {
-    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf8');
+    const dataStr = JSON.stringify(store, null, 2);
+    // 1. Atomic write to temporary file
+    fs.writeFileSync(tempPath, dataStr, 'utf8');
+    // 2. Atomic rename replaces STORE_PATH atomically
+    fs.renameSync(tempPath, STORE_PATH);
+
+    // 3. Automated rotating backup (at most once every 60 seconds or on structural change)
+    const now = Date.now();
+    if (now - lastBackupTime > 60000) {
+      lastBackupTime = now;
+      const backupPath = path.join(BACKUP_DIR, `clinic_data_backup_${now}.json`);
+      fs.writeFileSync(backupPath, dataStr, 'utf8');
+      pruneBackups();
+    }
   } catch (err) {
-    console.error('❌ Failed to save clinic data store to disk:', err.message);
+    console.error('❌ Failed to save clinic data store atomically:', err.message);
+    try {
+      if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+    } catch {}
   }
 };
 
@@ -1018,5 +1131,7 @@ const getStore = () => {
 module.exports = {
   getStore,
   saveStore,
-  loadStore
+  loadStore,
+  STORE_PATH,
+  BACKUP_DIR
 };

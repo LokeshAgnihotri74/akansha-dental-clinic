@@ -49,28 +49,22 @@ const DEFAULT_SERVICES = [
 ];
 
 const DEFAULT_SLOTS = [
-  { slot: '09:00 - 09:30', available: true },
-  { slot: '09:30 - 10:00', available: true },
-  { slot: '10:00 - 10:30', available: true },
-  { slot: '10:30 - 11:00', available: true },
-  { slot: '11:00 - 11:30', available: true },
-  { slot: '11:30 - 12:00', available: true },
-  { slot: '14:00 - 14:30', available: true },
-  { slot: '14:30 - 15:00', available: true },
-  { slot: '15:00 - 15:30', available: true },
-  { slot: '15:30 - 16:00', available: true },
-  { slot: '16:00 - 16:30', available: true },
-  { slot: '16:30 - 17:00', available: true },
-  { slot: '17:00 - 17:30', available: true },
-  { slot: '17:30 - 18:00', available: true },
-  { slot: '18:00 - 18:30', available: true },
-  { slot: '18:30 - 19:00', available: true },
-  { slot: '19:00 - 19:30', available: true },
-  { slot: '19:30 - 20:00', available: true },
-  { slot: '20:00 - 20:30', available: true },
-  { slot: '20:30 - 21:00', available: true },
-  { slot: '21:00 - 21:30', available: true },
-  { slot: '21:30 - 22:00', available: true }
+  // Morning OPD Shift (10:00 AM - 01:30 PM)
+  { slot: '10:00 AM', available: true },
+  { slot: '10:30 AM', available: true },
+  { slot: '11:00 AM', available: true },
+  { slot: '11:30 AM', available: true },
+  { slot: '12:00 PM', available: true },
+  { slot: '12:30 PM', available: true },
+  { slot: '01:00 PM', available: true },
+  // Evening OPD Shift (05:00 PM - 08:30 PM)
+  { slot: '05:00 PM', available: true },
+  { slot: '05:30 PM', available: true },
+  { slot: '06:00 PM', available: true },
+  { slot: '06:30 PM', available: true },
+  { slot: '07:00 PM', available: true },
+  { slot: '07:30 PM', available: true },
+  { slot: '08:00 PM', available: true }
 ];
 
 export default function AppointmentBookingPage() {
@@ -287,10 +281,12 @@ export default function AppointmentBookingPage() {
               <CheckCircle2 size={36} />
             </div>
 
-            <span className="badge badge-confirmed" style={{ marginBottom: '0.75rem' }}>Reservation Placed</span>
-            <h2 style={{ fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '0.5rem' }}>Appointment Confirmed</h2>
+            <span className="badge badge-confirmed" style={{ marginBottom: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309' }}>
+              Status: Pending Clinic Confirmation
+            </span>
+            <h2 style={{ fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '0.5rem' }}>Appointment Request Received</h2>
             <p style={{ color: 'var(--color-text-muted)', marginBottom: '2rem' }}>
-              We have received your appointment request. Our reception desk will call you to confirm your visit.
+              Your appointment request is placed in our clinical schedule queue. Our reception desk will call you to confirm your visit.
             </p>
 
             <div style={{ backgroundColor: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', textAlign: 'left', marginBottom: '1.5rem' }}>
@@ -320,21 +316,28 @@ export default function AppointmentBookingPage() {
               </div>
             </div>
 
-            {/* Notification Delivery Notice */}
+            {/* Truthful Notification Delivery Notice */}
             <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem', textAlign: 'left', marginBottom: '2rem', fontSize: '0.88rem', color: '#166534' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, marginBottom: '6px', fontSize: '0.92rem' }}>
                 <CheckCircle2 size={16} color="#00875a" />
-                <span>Instant Confirmation Dispatched!</span>
+                <span>Request Registered in Operatory Queue</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span>📲</span>
-                <span><strong>SMS / WhatsApp:</strong> Details sent to <strong>+91 {confirmation.patientPhone || phone}</strong></span>
+                <span>📞</span>
+                <span><strong>Next Step:</strong> Our clinic reception team will call or message your mobile number <strong>+91 {confirmation.patientPhone || phone}</strong> to verify operatory availability.</span>
               </div>
-              {(confirmation.patientEmail || email) && (
+              {confirmation.emailSent ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>📧</span>
-                  <span><strong>Official Email:</strong> Confirmation receipt sent to <strong>{confirmation.patientEmail || email}</strong></span>
+                  <span><strong>Official Email:</strong> Copy dispatched to <strong>{confirmation.patientEmail || email}</strong></span>
                 </div>
+              ) : (
+                (confirmation.patientEmail || email) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B' }}>
+                    <span>ℹ️</span>
+                    <span><strong>Email Notice:</strong> Confirmation request registered for <strong>{confirmation.patientEmail || email}</strong>.</span>
+                  </div>
+                )
               )}
             </div>
 
@@ -458,7 +461,22 @@ export default function AppointmentBookingPage() {
 
                 {loadingSlots ? (
                   <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                    Checking real-time slot calendar...
+                    Checking doctor OPD roster &amp; slot calendar...
+                  </div>
+                ) : (slotsData && slotsData.clinicOpen === false) ? (
+                  <div style={{
+                    padding: '1.5rem',
+                    textAlign: 'center',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FCA5A5',
+                    borderRadius: '8px',
+                    color: '#991B1B',
+                    fontSize: '0.88rem'
+                  }}>
+                    <strong>Doctor Unavailable on {slotsData.dayOfWeek}s</strong>
+                    <p style={{ margin: '6px 0 0', fontSize: '0.82rem', color: '#7F1D1D' }}>
+                      Our clinical specialists operate Monday to Saturday (Morning: 10:00 AM - 01:30 PM | Evening: 05:00 PM - 08:30 PM). Please select a working weekday.
+                    </p>
                   </div>
                 ) : (
                   <div className="slot-grid">

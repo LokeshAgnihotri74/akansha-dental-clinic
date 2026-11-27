@@ -958,7 +958,7 @@
       "phone": "9826012345",
       "email": "sunita.verma@example.com",
       "dateOfBirth": "1988-04-12",
-      "bloodGroup": "B+",
+      "bloodGroup": null,
       "medicalHistory": "Mild tooth sensitivity in lower molar.",
       "createdAt": "2026-11-20T07:05:08.513Z"
     }

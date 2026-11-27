@@ -378,6 +378,7 @@ export default function PatientsManagerPage() {
                 <div style={{ marginTop: '0.5rem', fontSize: '0.88rem' }}>
                   <div><strong>Phone:</strong> {selectedPatient.phone}</div>
                   <div style={{ marginTop: '4px' }}><strong>Email:</strong> {selectedPatient.email || 'None'}</div>
+                  <div style={{ marginTop: '4px' }}><strong>Blood Group:</strong> {selectedPatient.bloodGroup || 'Not Specified'}</div>
                 </div>
               </div>
 

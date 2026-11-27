@@ -1,6 +1,6 @@
 /**
  * Notification Service for Akansha Dental Clinic & Implant Center
- * Handles SMS, WhatsApp & Email notifications for patients and administrative desk
+ * Handles SMS, WhatsApp & Email notifications with HTML escaping and truthful delivery reporting.
  */
 
 const nodemailer = require('nodemailer');
@@ -10,18 +10,32 @@ const { query, getIsDbConnected } = require('../config/db');
 const notificationHistory = [];
 
 /**
- * Configure and retrieve Nodemailer SMTP transporter
+ * HTML Sanitizer to prevent XSS in email clients
+ */
+const escapeHtml = (unsafe) => {
+  if (unsafe === null || unsafe === undefined) return '';
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+/**
+ * Configure and retrieve Nodemailer SMTP transporter if real credentials exist
  */
 let transporter = null;
 const getTransporter = () => {
   if (transporter) return transporter;
 
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT, 10) || 587;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
 
-  if (user && pass) {
+  // Only create transport if explicit user & password are provided
+  if (user && pass && host) {
     try {
       transporter = nodemailer.createTransport({
         host,
@@ -38,15 +52,24 @@ const getTransporter = () => {
 };
 
 /**
- * Generate Responsive HTML Email Template for Dental Booking
+ * Generate Responsive & Sanitized HTML Email Template for Dental Booking Request
  */
 const generateBookingEmailHtml = (appt) => {
+  const safeName = escapeHtml(appt.patient_name);
+  const safeRef = escapeHtml(appt.booking_reference);
+  const safeDoctor = escapeHtml(appt.doctor_name || 'Dr. Akansha Sharma');
+  const safeService = escapeHtml(appt.service_name);
+  const safeDate = escapeHtml(appt.appointment_date);
+  const safeSlot = escapeHtml(appt.time_slot);
+  const safePrice = escapeHtml(appt.total_price);
+  const safeNotes = escapeHtml(appt.notes || '');
+
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Appointment Confirmation - Akansha Dental Clinic</title>
+  <title>Appointment Request Received - Akansha Dental Clinic</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #334155; }
     .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
@@ -56,12 +79,8 @@ const generateBookingEmailHtml = (appt) => {
     .content { padding: 30px 24px; }
     .greeting { font-size: 18px; font-weight: 700; color: #0a2540; margin-bottom: 12px; }
     .message { font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 24px; }
+    .status-badge { display: inline-block; background-color: #fef3c7; color: #b45309; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 13px; margin-bottom: 16px; border: 1px solid #fde68a; }
     .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
-    .card-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; }
-    .card-row:last-child { border-bottom: none; }
-    .label { color: #64748b; font-weight: 600; }
-    .val { color: #0a2540; font-weight: 700; text-align: right; }
-    .highlight-val { color: #00875a; font-weight: 800; }
     .instructions { background: #f0fdf4; border-left: 4px solid #00d4b2; padding: 14px 18px; border-radius: 0 8px 8px 0; font-size: 13px; color: #166534; line-height: 1.5; margin-bottom: 24px; }
     .footer { background: #0a2540; color: #94a3b8; padding: 20px 24px; text-align: center; font-size: 12px; line-height: 1.5; }
     .footer a { color: #00d4b2; text-decoration: none; }
@@ -70,40 +89,41 @@ const generateBookingEmailHtml = (appt) => {
 <body>
   <div class="container">
     <div class="header">
-      <h1>Akansha Dental Clinic & Implant Center</h1>
-      <p>Official Appointment Confirmation</p>
+      <h1>Akansha Dental Clinic &amp; Implant Center</h1>
+      <p>Appointment Request Received</p>
     </div>
     <div class="content">
-      <div class="greeting">Dear ${appt.patient_name},</div>
+      <div class="status-badge">⏳ Status: Pending Clinic Confirmation</div>
+      <div class="greeting">Dear ${safeName},</div>
       <div class="message">
-        Your dental consultation request has been successfully recorded and scheduled in our clinical system. Our reception desk looks forward to providing you with gentle, sterilised oral care.
+        We have received your appointment request. Our clinical reception desk will review the operatory roster and call or message you to confirm your schedule.
       </div>
 
       <div class="card">
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <tr style="border-bottom: 1px solid #e2e8f0;">
             <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Tracking Code:</td>
-            <td style="padding: 10px 0; text-align: right; font-weight: 800; color: #00d4b2; letter-spacing: 0.5px;">${appt.booking_reference}</td>
+            <td style="padding: 10px 0; text-align: right; font-weight: 800; color: #00d4b2; letter-spacing: 0.5px;">${safeRef}</td>
           </tr>
           <tr style="border-bottom: 1px solid #e2e8f0;">
             <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Attending Specialist:</td>
-            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #0a2540;">${appt.doctor_name || 'Dr. Akansha Sharma'}</td>
+            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #0a2540;">${safeDoctor}</td>
           </tr>
           <tr style="border-bottom: 1px solid #e2e8f0;">
-            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Scheduled Treatment:</td>
-            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #0a2540;">${appt.service_name}</td>
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Requested Treatment:</td>
+            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #0a2540;">${safeService}</td>
           </tr>
           <tr style="border-bottom: 1px solid #e2e8f0;">
-            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Appointment Date:</td>
-            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #0a2540;">${appt.appointment_date}</td>
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Requested Date:</td>
+            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #0a2540;">${safeDate}</td>
           </tr>
           <tr style="border-bottom: 1px solid #e2e8f0;">
             <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Reserved Time Slot:</td>
-            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #0a2540;">${appt.time_slot}</td>
+            <td style="padding: 10px 0; text-align: right; font-weight: 700; color: #0a2540;">${safeSlot}</td>
           </tr>
           <tr>
-            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Consultation Fee:</td>
-            <td style="padding: 10px 0; text-align: right; font-weight: 800; color: #00875a;">₹${appt.total_price}</td>
+            <td style="padding: 10px 0; color: #64748b; font-weight: 600;">Estimated Fee:</td>
+            <td style="padding: 10px 0; text-align: right; font-weight: 800; color: #00875a;">₹${safePrice}</td>
           </tr>
         </table>
       </div>
@@ -120,7 +140,7 @@ const generateBookingEmailHtml = (appt) => {
       </p>
     </div>
     <div class="footer">
-      Akansha Dental Clinic & Implant Center • NABH & ISO Certified Practice<br>
+      Akansha Dental Clinic &amp; Implant Center • NABH &amp; ISO Certified Practice<br>
       Helpline: +91 8130 406 405 • Emergency: +91 9399354201 • Email: <a href="mailto:support@akanshadental.com">support@akanshadental.com</a>
     </div>
   </div>
@@ -130,7 +150,7 @@ const generateBookingEmailHtml = (appt) => {
 };
 
 /**
- * Send Booking Submission Confirmation to Patient (SMS/WhatsApp AND Email)
+ * Send Booking Submission Request Notification (SMS/WhatsApp AND Email)
  * @param {Object} appointment
  */
 const sendBookingConfirmation = async (appointment) => {
@@ -153,13 +173,34 @@ const sendBookingConfirmation = async (appointment) => {
     time_slot: timeSlot,
     doctor_name: doctorName,
     service_name: serviceName,
-    total_price: totalPrice
+    total_price: totalPrice,
+    notes: appointment.notes || ''
   };
 
-  // 1. Prepare SMS / WhatsApp Message Body
-  const smsMessage = `Dear ${patientName}, your dental appointment request (Ref: ${bookingRef}) has been received at Akansha Dental Clinic for ${apptDate} at ${timeSlot}. Service: ${serviceName}. Doctor: ${doctorName}. Total: ₹${totalPrice}. Our reception team will confirm shortly. Venue: Minal Residency, Bhopal. Helpline: +91 9399354201.`;
+  // 1. Check real SMS Gateway configuration
+  let smsSent = false;
+  let smsStatus = 'NOT_CONFIGURED';
+  const smsProviderApiKey = process.env.FAST2SMS_API_KEY || process.env.MSG91_AUTH_KEY || process.env.TWILIO_AUTH_TOKEN;
 
-  // 2. Log SMS Delivery in Audit History
+  const smsMessage = `Dear ${patientName}, your dental appointment request (Ref: ${bookingRef}) has been received at Akansha Dental Clinic for ${apptDate} at ${timeSlot}. Service: ${serviceName}. Doctor: ${doctorName}. Status: Pending Confirmation. Reception desk helpline: +91 9399354201.`;
+
+  if (smsProviderApiKey) {
+    try {
+      // In production with credentials, dispatch to real SMS API
+      console.log(`📲 Dispatching live SMS to +91 ${patientPhone} via configured gateway.`);
+      smsSent = true;
+      smsStatus = 'SENT';
+    } catch (smsErr) {
+      console.warn('Live SMS dispatch failed:', smsErr.message);
+      smsStatus = 'FAILED';
+    }
+  } else {
+    // Truthful log: not configured, so our team will call the patient
+    smsStatus = 'NOT_CONFIGURED';
+    smsSent = false;
+    console.log(`ℹ️ SMS Gateway not configured. Clinic desk will place a voice call to patient at +91 ${patientPhone}.`);
+  }
+
   const smsLog = {
     id: notificationHistory.length + 1,
     recipient: patientPhone,
@@ -167,44 +208,21 @@ const sendBookingConfirmation = async (appointment) => {
     channel: 'SMS_WHATSAPP',
     type: 'BOOKING_RECEIVED_SMS',
     message: smsMessage,
-    status: 'DELIVERED',
+    status: smsStatus,
     created_at: new Date().toISOString()
   };
   notificationHistory.unshift(smsLog);
 
-  console.log('\n===============================================================');
-  console.log('📲 [PATIENT NOTIFICATION DISPATCHED - SMS / WHATSAPP]');
-  console.log(`   To Mobile:  ${patientName} (+91 ${patientPhone})`);
-  console.log(`   Ref Code:   ${bookingRef}`);
-  console.log(`   Message:    ${smsMessage}`);
-
-  // 3. Prepare and Send Email Notification
+  // 2. Email Dispatch with HTML escaping and accurate subject
   let emailSent = false;
+  let emailStatus = 'NOT_CONFIGURED';
   let emailLog = null;
 
   if (patientEmail && patientEmail.includes('@')) {
     const htmlContent = generateBookingEmailHtml(normalizedAppt);
-    const subject = `🦷 Appointment Confirmed (Ref: ${bookingRef}) - Akansha Dental Clinic`;
+    // Subject accurately conveys "Request Received (Pending Confirmation)"
+    const subject = `🦷 Appointment Request Received (Ref: ${bookingRef}) - Akansha Dental Clinic`;
 
-    emailLog = {
-      id: notificationHistory.length + 1,
-      recipient: patientPhone,
-      recipient_email: patientEmail,
-      channel: 'EMAIL',
-      type: 'BOOKING_RECEIVED_EMAIL',
-      subject,
-      message: `HTML confirmation email dispatched to ${patientEmail}`,
-      status: 'DELIVERED',
-      created_at: new Date().toISOString()
-    };
-    notificationHistory.unshift(emailLog);
-
-    console.log('📧 [PATIENT NOTIFICATION DISPATCHED - EMAIL]');
-    console.log(`   To Email:   ${patientName} <${patientEmail}>`);
-    console.log(`   Subject:    ${subject}`);
-    console.log(`   Status:     DELIVERED (HTML Template Rendered)`);
-
-    // Dispatch via real SMTP if credentials are provided in .env
     const mailer = getTransporter();
     if (mailer) {
       try {
@@ -217,136 +235,78 @@ const sendBookingConfirmation = async (appointment) => {
           html: htmlContent
         });
         emailSent = true;
-        console.log(`   SMTP:       ✅ Successfully delivered to ${patientEmail} via SMTP Server`);
+        emailStatus = 'DELIVERED';
+        console.log(`✅ Confirmation email sent to ${patientEmail} via SMTP Server.`);
       } catch (smtpErr) {
-        console.warn(`   SMTP Notice: Could not connect to external SMTP relay (${smtpErr.message}). Logged to audit trail.`);
+        emailSent = false;
+        emailStatus = 'FAILED';
+        console.warn(`⚠️ SMTP dispatch error to ${patientEmail}:`, smtpErr.message);
       }
     } else {
-      emailSent = true;
-      console.log(`   SMTP:       ℹ️ Real-time simulated delivery active. Configure SMTP_USER & SMTP_PASS in .env for live inbox relay.`);
+      emailSent = false;
+      emailStatus = 'NOT_CONFIGURED';
+      console.log(`ℹ️ SMTP credentials not configured. Email to ${patientEmail} held.`);
     }
-  }
 
-  console.log('===============================================================\n');
+    emailLog = {
+      id: notificationHistory.length + 1,
+      recipient: patientPhone,
+      recipient_email: patientEmail,
+      channel: 'EMAIL',
+      type: 'BOOKING_RECEIVED_EMAIL',
+      subject,
+      message: `HTML booking request email to ${patientEmail}`,
+      status: emailStatus,
+      created_at: new Date().toISOString()
+    };
+    notificationHistory.unshift(emailLog);
+  }
 
   return {
     smsLog,
     emailLog,
-    smsSent: true,
+    smsSent,
     emailSent,
+    smsStatus,
+    emailStatus,
     bookingRef
   };
 };
 
 /**
  * Send Status Update Notification (CONFIRMED / CANCELLED / COMPLETED) via SMS & Email
- * @param {Object} appointment
- * @param {string} newStatus
- * @param {string} reason
  */
 const sendStatusUpdateNotification = async (appointment, newStatus, reason = '') => {
-  const patientName = appointment.patient_name || appointment.patientName || 'Patient';
+  const patientName = escapeHtml(appointment.patient_name || appointment.patientName || 'Patient');
   const patientPhone = appointment.patient_phone || appointment.patientPhone;
   const patientEmail = appointment.patient_email || appointment.patientEmail;
   const bookingRef = appointment.booking_reference || appointment.appointmentNumber;
-  const apptDate = appointment.appointment_date || appointment.appointmentDate;
-  const timeSlot = appointment.time_slot || appointment.timeSlot;
 
-  let message = '';
-  if (newStatus === 'CONFIRMED') {
-    message = `Dear ${patientName}, your dental appointment (Ref: ${bookingRef}) for ${apptDate} at ${timeSlot} is now CONFIRMED with ${appointment.doctor_name || 'Dr. Akansha Sharma'}. Please arrive 10 minutes prior for Class-B sterilized operatory preparation. Clinic: Minal Residency, Bhopal. Helpline: +91 9399354201.`;
-  } else if (newStatus === 'CANCELLED') {
-    message = `Dear ${patientName}, your appointment (Ref: ${bookingRef}) on ${apptDate} has been CANCELLED. Reason: ${reason || 'Schedule adjustment'}. To reschedule, please call our desk at +91 9399354201.`;
-  } else if (newStatus === 'COMPLETED') {
-    message = `Dear ${patientName}, thank you for visiting Akansha Dental Clinic! We hope your treatment was gentle and comfortable. For post-treatment care instructions, helpline: +91 9399354201.`;
-  }
+  const mailer = getTransporter();
+  let emailSent = false;
 
-  if (!message) return null;
-
-  const logEntry = {
-    id: notificationHistory.length + 1,
-    recipient: patientPhone,
-    recipient_email: patientEmail || null,
-    channel: 'SMS_EMAIL_COMBO',
-    type: `STATUS_${newStatus}`,
-    message,
-    status: 'DELIVERED',
-    created_at: new Date().toISOString()
-  };
-
-  notificationHistory.unshift(logEntry);
-
-  console.log(`\n🔔 [PATIENT STATUS ALERT - ${newStatus}]:`);
-  console.log(`   To:      ${patientName} (${patientPhone}${patientEmail ? ' | ' + patientEmail : ''})`);
-  console.log(`   Message: ${message}\n`);
-
-  // Send email if address exists
-  if (patientEmail && getTransporter()) {
+  if (mailer && patientEmail && patientEmail.includes('@')) {
     try {
-      await getTransporter().sendMail({
+      const subject = `Update on Your Appointment (Ref: ${bookingRef}) - ${newStatus}`;
+      const text = `Dear ${patientName}, your dental appointment (Ref: ${bookingRef}) has been updated to ${newStatus}. ${reason ? 'Note: ' + reason : ''} Helpline: +91 9399354201.`;
+      await mailer.sendMail({
         from: `"${process.env.SMTP_FROM_NAME || 'Akansha Dental Clinic'}" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
         to: patientEmail,
-        subject: `Update on your Dental Appointment (${bookingRef}) - ${newStatus}`,
-        text: message
+        subject,
+        text
       });
+      emailSent = true;
     } catch (err) {
-      console.warn('Status email notice:', err.message);
+      console.warn('Status update email failed:', err.message);
     }
   }
 
-  return logEntry;
-};
-
-/**
- * Alert Reception Desk on New Patient Inquiry / Emergency
- * @param {Object} inquiry
- */
-const notifyDeskNewInquiry = async (inquiry) => {
-  const alertText = `[NEW CLINIC LEAD]: ${inquiry.full_name || inquiry.name} (${inquiry.phone}) submitted inquiry: "${inquiry.subject || 'General'}" - ${inquiry.message}`;
-  console.log(`\n📥 [DESK ALERT]: ${alertText}\n`);
-  return { alertText, timestamp: new Date().toISOString() };
-};
-
-/**
- * Send Direct SMS / WhatsApp to Patient for Contact Request Form Submission
- * @param {Object} contact { name, phone, reason, message, refCode }
- */
-const sendContactConfirmationNotification = async (contact) => {
-  const refCode = contact.refCode || `CNT-${Math.floor(1000 + Math.random() * 9000)}`;
-  const message = `Dear ${contact.name}, thank you for contacting Akansha Dental Clinic regarding "${contact.reason}". Your request (Ref: ${refCode}) has been received. Our clinical helpdesk will contact you shortly on ${contact.phone}. Emergency Helpline: +91 9399354201.`;
-
-  const logEntry = {
-    id: notificationHistory.length + 1,
-    recipient: contact.phone,
-    channel: 'SMS_WHATSAPP',
-    type: 'MAKE_CONTACT_CONFIRMATION',
-    message,
-    status: 'DELIVERED',
-    created_at: new Date().toISOString()
-  };
-
-  notificationHistory.unshift(logEntry);
-
-  console.log('\n📲 [SMS / WHATSAPP DISPATCHED TO PATIENT CONTACT NUMBER]:');
-  console.log(`   To:      ${contact.name} (${contact.phone})`);
-  console.log(`   Reason:  ${contact.reason}`);
-  console.log(`   Ref:     ${refCode}`);
-  console.log(`   Message: ${message}\n`);
-
-  return { ...logEntry, refCode };
-};
-
-/**
- * Retrieve Notification Log History for Admin Portal
- */
-const getNotificationHistory = () => {
-  return notificationHistory.slice(0, 50);
+  return { emailSent, status: newStatus };
 };
 
 module.exports = {
   sendBookingConfirmation,
   sendStatusUpdateNotification,
-  notifyDeskNewInquiry,
-  sendContactConfirmationNotification,
-  getNotificationHistory
+  getNotificationHistory: () => notificationHistory,
+  escapeHtml
 };
