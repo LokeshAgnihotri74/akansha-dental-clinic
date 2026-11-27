@@ -41,3 +41,13 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 *.log
+
+# Clinic Data Persistence & Backups (Contains private patient & credential data)
+clinic_data.json
+**/clinic_data.json
+clinic_data.tmp.json
+**/clinic_data.tmp.json
+clinic_data.corrupted.*.json
+**/clinic_data.corrupted.*.json
+backups/
+**/backups/

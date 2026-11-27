@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.local
+.env.production
+clinic_data.json
+clinic_data.tmp.json
+clinic_data.corrupted.*.json
+backups/
+*.log

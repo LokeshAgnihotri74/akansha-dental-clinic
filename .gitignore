@@ -28,3 +28,13 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Clinic Data Persistence & Backups (Contains private patient & credential data)
+clinic_data.json
+**/clinic_data.json
+clinic_data.tmp.json
+**/clinic_data.tmp.json
+clinic_data.corrupted.*.json
+**/clinic_data.corrupted.*.json
+backups/
+**/backups/

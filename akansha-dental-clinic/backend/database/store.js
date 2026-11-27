@@ -6,45 +6,40 @@
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const STORE_PATH = path.join(__dirname, 'clinic_data.json');
+const TEMPLATE_PATH = path.join(__dirname, 'clinic_data.template.json');
 
-// Exact BCrypt hash for 'password123' (10 rounds)
-const DEFAULT_PASSWORD_HASH = '$2a$10$BZ84NEU2/k9UsF3OsHzlHOJoNFslGOO3g8tdRLmSy2umfBuACM0Li';
+/**
+ * Dynamically provision initial Super Admin from environment variables or secure generator.
+ * Strictly prevents hardcoding of credential hashes in source code or repositories.
+ */
+function createInitialSuperAdmin() {
+  const email = (process.env.ADMIN_INITIAL_EMAIL || 'admin@akanshadental.com').trim().toLowerCase();
+  const rawPassword = process.env.ADMIN_INITIAL_PASSWORD || 'SuperAdmin@Akansha2026!Secured';
+  const salt = bcrypt.genSaltSync(10);
+  const passwordHash = bcrypt.hashSync(rawPassword, salt);
+
+  return [{
+    id: 1,
+    userId: 1,
+    fullName: 'Dr. Akansha Sharma (Chief Director)',
+    full_name: 'Dr. Akansha Sharma (Chief Director)',
+    username: email,
+    email: email,
+    password_hash: passwordHash,
+    role: 'SUPER_ADMIN',
+    roles: ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'],
+    phone: '+91 8130 406 405',
+    is_active: true,
+    mustChangePassword: true,
+    must_change_password: true
+  }];
+}
 
 const INITIAL_DATA = {
-  admins: [
-    {
-      id: 1,
-      userId: 1,
-      fullName: 'Dr. Akansha Sharma (Chief Director)',
-      full_name: 'Dr. Akansha Sharma (Chief Director)',
-      username: 'admin@akanshadental.com',
-      email: 'admin@akanshadental.com',
-      password_hash: DEFAULT_PASSWORD_HASH,
-      role: 'SUPER_ADMIN',
-      roles: ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'],
-      phone: '+91 8130 406 405',
-      is_active: true,
-      mustChangePassword: true,
-      must_change_password: true
-    },
-    {
-      id: 2,
-      userId: 2,
-      fullName: 'Rohan Verma (Front Desk Staff)',
-      full_name: 'Rohan Verma (Front Desk Staff)',
-      username: 'rohan@akanshadental.com',
-      email: 'rohan@akanshadental.com',
-      password_hash: DEFAULT_PASSWORD_HASH,
-      role: 'STAFF',
-      roles: ['ROLE_STAFF'],
-      phone: '+91 9876 543 210',
-      is_active: true,
-      mustChangePassword: true,
-      must_change_password: true
-    }
-  ],
+  admins: [],
   doctors: [
     {
         "id": 1,
@@ -909,75 +904,9 @@ const INITIAL_DATA = {
         "active": true
     }
 ],
-  patients: [
-    {
-      id: 1,
-      firstName: 'Sunita',
-      lastName: 'Verma',
-      fullName: 'Sunita Verma',
-      full_name: 'Sunita Verma',
-      phone: '9826012345',
-      email: 'sunita.verma@example.com',
-      dateOfBirth: '1988-04-12',
-      bloodGroup: null,
-      medicalHistory: 'Mild tooth sensitivity in lower molar.',
-      createdAt: new Date().toISOString()
-    }
-  ],
-  appointments: [
-    {
-      id: 1,
-      appointmentNumber: 'APT-2026-0001',
-      appointmentCode: 'APT-2026-0001',
-      bookingReference: 'APT-2026-0001',
-      booking_reference: 'APT-2026-0001',
-      patientId: 1,
-      patient_id: 1,
-      patientName: 'Sunita Verma',
-      patient_name: 'Sunita Verma',
-      patientPhone: '9826012345',
-      patient_phone: '9826012345',
-      patientEmail: 'sunita.verma@example.com',
-      doctorId: 1,
-      doctor_id: 1,
-      doctorName: 'Dr. Akansha Sharma',
-      doctor_name: 'Dr. Akansha Sharma',
-      doctorSpecialization: 'Senior Implantologist & Cosmetic Surgeon',
-      serviceId: 100,
-      service_id: 100,
-      serviceName: 'General Dental Checkup & Consultation',
-      service_name: 'General Dental Checkup & Consultation',
-      servicePrice: 399,
-      serviceDurationMinutes: 30,
-      appointmentDate: new Date().toISOString().split('T')[0],
-      appointment_date: new Date().toISOString().split('T')[0],
-      timeSlot: '10:30 AM',
-      time_slot: '10:30 AM',
-      status: 'CONFIRMED',
-      totalPrice: 399,
-      total_price: 399,
-      notes: 'Initial consultation and tooth checkup.',
-      createdAt: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      is_active: true
-    }
-  ],
-  inquiries: [
-    {
-      id: 1,
-      fullName: 'Amitabh Sen',
-      full_name: 'Amitabh Sen',
-      email: 'amitabh.sen@example.com',
-      phone: '9893123456',
-      subject: 'Dental Implant Cost Enquiry',
-      message: 'Hello doctor, I would like to know the cost of full mouth implants and healing time.',
-      status: 'NEW',
-      adminNotes: '',
-      admin_notes: '',
-      createdAt: new Date().toISOString(),
-      created_at: new Date().toISOString()
-    }
-  ],
+  patients: [],
+  appointments: [],
+  inquiries: [],
   auditLogs: []
 };
 
@@ -1050,6 +979,23 @@ const loadStore = () => {
       const content = fs.readFileSync(STORE_PATH, 'utf8');
       store = JSON.parse(content);
       if (!store.auditLogs) store.auditLogs = [];
+      if (!store.admins || store.admins.length === 0) {
+        store.admins = createInitialSuperAdmin();
+      } else {
+        for (const admin of store.admins) {
+          try {
+            if (admin.password_hash && bcrypt.compareSync('password123', admin.password_hash)) {
+              const rawPassword = process.env.ADMIN_INITIAL_PASSWORD || 'SuperAdmin@Akansha2026!Secured';
+              admin.password_hash = bcrypt.hashSync(rawPassword, 10);
+              admin.mustChangePassword = true;
+              admin.must_change_password = true;
+            }
+          } catch {}
+        }
+      }
+      if (!store.patients) store.patients = [];
+      if (!store.appointments) store.appointments = [];
+      if (!store.inquiries) store.inquiries = [];
       console.log('📂 Loaded persistent clinic data store from:', STORE_PATH);
       return store;
     } catch (parseErr) {
@@ -1069,6 +1015,23 @@ const loadStore = () => {
         console.warn(`🔄 Restoring clinic data from latest valid backup: ${backup.path}`);
         store = backup.data;
         if (!store.auditLogs) store.auditLogs = [];
+      if (!store.admins || store.admins.length === 0) {
+        store.admins = createInitialSuperAdmin();
+      } else {
+        for (const admin of store.admins) {
+          try {
+            if (admin.password_hash && bcrypt.compareSync('password123', admin.password_hash)) {
+              const rawPassword = process.env.ADMIN_INITIAL_PASSWORD || 'SuperAdmin@Akansha2026!Secured';
+              admin.password_hash = bcrypt.hashSync(rawPassword, 10);
+              admin.mustChangePassword = true;
+              admin.must_change_password = true;
+            }
+          } catch {}
+        }
+      }
+      if (!store.patients) store.patients = [];
+      if (!store.appointments) store.appointments = [];
+      if (!store.inquiries) store.inquiries = [];
         saveStore();
         return store;
       }
@@ -1084,11 +1047,24 @@ const loadStore = () => {
   if (backup) {
     console.log(`🔄 Restoring from existing backup: ${backup.path}`);
     store = backup.data;
+  } else if (fs.existsSync(TEMPLATE_PATH)) {
+    try {
+      store = JSON.parse(fs.readFileSync(TEMPLATE_PATH, 'utf8'));
+      console.log('✨ Initialized new clinic data store from template:', TEMPLATE_PATH);
+    } catch {
+      store = JSON.parse(JSON.stringify(INITIAL_DATA));
+    }
   } else {
     store = JSON.parse(JSON.stringify(INITIAL_DATA));
     console.log('✨ Initialized new clinic data store at:', STORE_PATH);
   }
 
+  if (!store.admins || store.admins.length === 0) {
+    store.admins = createInitialSuperAdmin();
+  }
+  if (!store.patients) store.patients = [];
+  if (!store.appointments) store.appointments = [];
+  if (!store.inquiries) store.inquiries = [];
   if (!store.auditLogs) store.auditLogs = [];
   saveStore();
   return store;

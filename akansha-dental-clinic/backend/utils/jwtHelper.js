@@ -1,6 +1,11 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'akansha_dental_super_secret_jwt_key_2026_secured';
+// Strictly enforce JWT_SECRET requirement — refuse to operate with missing or weak secrets
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim().length < 32) {
+  throw new Error('JWT_SECRET required and must be at least 32 characters long');
+}
+
+const JWT_SECRET = process.env.JWT_SECRET.trim();
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 const generateToken = (payload) => {

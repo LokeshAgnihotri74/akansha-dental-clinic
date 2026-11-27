@@ -4,6 +4,7 @@ const { getStore, saveStore } = require('../database/store');
 const { generateToken } = require('../utils/jwtHelper');
 const { success, error } = require('../utils/responseHelper');
 const { logAuditEvent } = require('../services/auditService');
+const { recordFailedLogin, recordSuccessfulLogin } = require('../middleware/authRateLimiter');
 
 /**
  * Admin & Staff Login Handler
@@ -42,19 +43,25 @@ const login = async (req, res, next) => {
     }
 
     if (!user) {
-      return error(res, 'Invalid credentials. User account not found.', 401);
+      recordFailedLogin(req);
+      return error(res, 'Invalid email/username or password.', 401);
     }
 
     // Check if account is locked / inactive
     if (user.is_active === false || user.active === false) {
-      return error(res, 'This account has been deactivated. Please contact the Super Administrator.', 403);
+      recordFailedLogin(req);
+      return error(res, 'Invalid email/username or password.', 401);
     }
 
     // Verify Password Hash
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return error(res, 'Invalid password. Please check your credentials.', 401);
+      recordFailedLogin(req);
+      return error(res, 'Invalid email/username or password.', 401);
     }
+
+    // Clear failed login counter on successful authentication
+    recordSuccessfulLogin(req);
 
     const roles = user.roles || (user.role === 'SUPER_ADMIN' ? ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'] : ['ROLE_STAFF']);
     const mustChangePassword = Boolean(user.mustChangePassword || user.must_change_password);

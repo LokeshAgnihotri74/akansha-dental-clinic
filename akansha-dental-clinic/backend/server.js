@@ -7,6 +7,11 @@ const fs = require('fs');
 
 dotenv.config();
 
+// Strictly enforce JWT_SECRET requirement — fail fast on startup
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim().length < 32) {
+  throw new Error('JWT_SECRET required and must be at least 32 characters long');
+}
+
 const { testConnection, getIsDbConnected } = require('./config/db');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
