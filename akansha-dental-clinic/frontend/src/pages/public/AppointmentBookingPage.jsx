@@ -24,12 +24,16 @@ const GENERAL_CHECKUP_SERVICE = {
   description: 'Complete oral cavity examination, digital intraoral screening & specialist consultation.'
 };
 
+const getTodayIST = () => {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+};
+
 const DEFAULT_DOCTORS = [
   ANY_DOCTOR_OPTION,
-  { id: 1, fullName: 'Dr. Akansha Mishra', specialization: 'Chief Implantologist & Cosmetic Dentist', consultationFee: 1000 },
-  { id: 2, fullName: 'Dr. Rajiv Mehta', specialization: 'Senior Orthodontist', consultationFee: 1000 },
-  { id: 3, fullName: 'Dr. Sneha Kulkarni', specialization: 'Consultant Endodontist', consultationFee: 1000 },
-  { id: 4, fullName: 'Dr. Amitav Banerjee', specialization: 'Pediatric Dental Specialist', consultationFee: 1000 }
+  { id: 1, fullName: 'Dr. Akansha Sharma', specialization: 'Senior Implantologist & Cosmetic Surgeon', consultationFee: 500 },
+  { id: 2, fullName: 'Dr. Rajesh Deshmukh', specialization: 'Chief Endodontist & Microscopic RCT', consultationFee: 400 },
+  { id: 3, fullName: 'Dr. Neha Kapoor', specialization: 'Chief Orthodontist & Clear Aligner Specialist', consultationFee: 450 },
+  { id: 4, fullName: 'Dr. Amit Patel', specialization: 'Periodontist & Gum Laser Surgeon', consultationFee: 350 }
 ];
 
 const DEFAULT_SERVICES = [
@@ -80,19 +84,17 @@ export default function AppointmentBookingPage() {
   // Default treatment: '100' (General Dental Checkup & Consultation - ₹399)
   const [selectedDoctorId, setSelectedDoctorId] = useState(() => searchParams.get('doctorId') || '0');
   const [selectedServiceId, setSelectedServiceId] = useState(() => searchParams.get('serviceId') || '100');
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return today;
-  });
+  const [selectedDate, setSelectedDate] = useState(() => getTodayIST());
   const [selectedSlot, setSelectedSlot] = useState('');
 
-  // Available slots state initialized with guaranteed standard slots
+  // Available slots state initialized
   const [slotsData, setSlotsData] = useState({
     clinicOpen: true,
     dayOfWeek: 'TODAY',
-    slots: DEFAULT_SLOTS
+    slots: []
   });
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState(null);
 
   // Patient Info & Validation
   const [firstName, setFirstName] = useState('');
@@ -158,17 +160,7 @@ export default function AppointmentBookingPage() {
     async function fetchSlots() {
       setLoadingSlots(true);
       setSelectedSlot('');
-
-      // If 'Any Available Doctor' (id: 0), all clinic slots are available
-      if (selectedDoctorId === '0' || selectedDoctorId === 0) {
-        setSlotsData({
-          clinicOpen: true,
-          dayOfWeek: 'SELECTED DAY',
-          slots: DEFAULT_SLOTS
-        });
-        setLoadingSlots(false);
-        return;
-      }
+      setSlotsError(null);
 
       try {
         const res = await appointmentService.getAvailableSlots(selectedDoctorId, selectedDate);
@@ -177,10 +169,11 @@ export default function AppointmentBookingPage() {
         }
       } catch (err) {
         if (isMounted) {
+          setSlotsError(err.message || 'Unable to load real-time slot availability. Please try again.');
           setSlotsData({
-            clinicOpen: true,
-            dayOfWeek: 'SELECTED DAY',
-            slots: DEFAULT_SLOTS
+            clinicOpen: false,
+            dayOfWeek: '',
+            slots: []
           });
         }
       } finally {
@@ -357,7 +350,7 @@ export default function AppointmentBookingPage() {
 
   const selectedDoctor = doctors.find((d) => d.id.toString() === selectedDoctorId);
   const selectedService = services.find((s) => s.id.toString() === selectedServiceId);
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getTodayIST();
 
   return (
     <div>
@@ -463,6 +456,31 @@ export default function AppointmentBookingPage() {
                   <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>
                     Checking doctor OPD roster &amp; slot calendar...
                   </div>
+                ) : slotsError ? (
+                  <div style={{
+                    padding: '1.25rem',
+                    textAlign: 'center',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FCA5A5',
+                    borderRadius: '8px',
+                    color: '#991B1B',
+                    fontSize: '0.88rem'
+                  }}>
+                    <strong>Unable to verify real-time availability</strong>
+                    <p style={{ margin: '6px 0 10px', fontSize: '0.82rem', color: '#7F1D1D' }}>
+                      {slotsError}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(d => `${d}`);
+                      }}
+                      className="btn btn-outline"
+                      style={{ fontSize: '0.8rem', padding: '4px 12px' }}
+                    >
+                      Retry Availability
+                    </button>
+                  </div>
                 ) : (slotsData && slotsData.clinicOpen === false) ? (
                   <div style={{
                     padding: '1.5rem',
@@ -478,9 +496,24 @@ export default function AppointmentBookingPage() {
                       Our clinical specialists operate Monday to Saturday (Morning: 10:00 AM - 01:30 PM | Evening: 05:00 PM - 08:30 PM). Please select a working weekday.
                     </p>
                   </div>
+                ) : (!slotsData?.slots || slotsData.slots.length === 0) ? (
+                  <div style={{
+                    padding: '1.5rem',
+                    textAlign: 'center',
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    color: '#64748B',
+                    fontSize: '0.88rem'
+                  }}>
+                    <strong>No slots available for this date.</strong>
+                    <p style={{ margin: '6px 0 0', fontSize: '0.82rem' }}>
+                      All slots may be fully booked or elapsed for today. Please select another date.
+                    </p>
+                  </div>
                 ) : (
                   <div className="slot-grid">
-                    {((slotsData && slotsData.slots && slotsData.slots.length > 0) ? slotsData.slots : DEFAULT_SLOTS).map((slotObj) => (
+                    {slotsData.slots.map((slotObj) => (
                       <button
                         key={slotObj.slot}
                         type="button"

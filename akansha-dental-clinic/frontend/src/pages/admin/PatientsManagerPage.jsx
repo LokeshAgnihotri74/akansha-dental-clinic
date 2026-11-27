@@ -281,8 +281,8 @@ export default function PatientsManagerPage() {
                       <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>ID: #{p.id}</span>
                     </td>
                     <td style={{ padding: '1rem', fontWeight: 500, color: '#1E293B' }}>{p.phone}</td>
-                    <td style={{ padding: '1rem', color: '#64748B' }}>{p.email || '—'}</td>
-                    <td style={{ padding: '1rem', color: '#64748B' }}>{p.address || '—'}</td>
+                    <td style={{ padding: '1rem', color: '#64748B' }}>{p.email || 'Not recorded'}</td>
+                    <td style={{ padding: '1rem', color: '#64748B' }}>{p.address || 'Not recorded'}</td>
                     <td style={{ padding: '1rem', color: '#64748B', fontSize: '0.82rem' }}>
                       {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '—'}
                     </td>
@@ -377,15 +377,15 @@ export default function PatientsManagerPage() {
                 <span style={{ fontSize: '0.75rem', color: '#64748B', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Contact Info</span>
                 <div style={{ marginTop: '0.5rem', fontSize: '0.88rem' }}>
                   <div><strong>Phone:</strong> {selectedPatient.phone}</div>
-                  <div style={{ marginTop: '4px' }}><strong>Email:</strong> {selectedPatient.email || 'None'}</div>
-                  <div style={{ marginTop: '4px' }}><strong>Blood Group:</strong> {selectedPatient.bloodGroup || 'Not Specified'}</div>
+                  <div style={{ marginTop: '4px' }}><strong>Email:</strong> {selectedPatient.email || 'Not recorded'}</div>
+                  <div style={{ marginTop: '4px' }}><strong>Blood Group:</strong> {selectedPatient.bloodGroup || 'Not recorded'}</div>
                 </div>
               </div>
 
               <div style={{ border: '1px solid #E2E8F0', padding: '1rem', borderRadius: '8px' }}>
                 <span style={{ fontSize: '0.75rem', color: '#64748B', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Address</span>
                 <p style={{ margin: '0.5rem 0 0', fontSize: '0.88rem', color: '#475569' }}>
-                  {selectedPatient.address || 'No residential address on file.'}
+                  {selectedPatient.address || 'Not recorded'}
                 </p>
               </div>
             </div>
@@ -395,7 +395,7 @@ export default function PatientsManagerPage() {
                 Medical History & Clinical Allergies
               </span>
               <p style={{ margin: 0, fontSize: '0.88rem', color: '#334155', lineHeight: 1.5 }}>
-                {selectedPatient.medicalHistory || 'No preexisting medical conditions or drug allergies recorded.'}
+                {selectedPatient.medicalHistory || 'Not recorded'}
               </p>
             </div>
           </div>

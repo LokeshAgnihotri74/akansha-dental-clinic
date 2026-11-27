@@ -10,11 +10,11 @@ const normalizePatient = (p) => ({
   fullName: p.fullName || p.full_name || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
   full_name: p.fullName || p.full_name || `${p.firstName || ''} ${p.lastName || ''}`.trim(),
   phone: p.phone,
-  email: p.email || '',
-  address: p.address || '', // Never fabricate clinical addresses
+  email: (p.email && p.email.trim()) ? p.email.trim() : 'Not recorded',
+  address: (p.address && p.address.trim()) ? p.address.trim() : 'Not recorded', // Never fabricate clinical addresses
   dateOfBirth: p.dateOfBirth || p.date_of_birth || null,
-  bloodGroup: p.bloodGroup || p.blood_group || null, // Never fabricate medical blood groups
-  medicalHistory: p.medicalHistory || p.medical_history || '',
+  bloodGroup: (p.bloodGroup || p.blood_group) && (p.bloodGroup || p.blood_group).trim() ? (p.bloodGroup || p.blood_group).trim() : 'Not recorded', // Never fabricate medical blood groups
+  medicalHistory: (p.medicalHistory || p.medical_history) && (p.medicalHistory || p.medical_history).trim() ? (p.medicalHistory || p.medical_history).trim() : 'Not recorded',
   createdAt: p.createdAt || p.created_at || new Date().toISOString()
 });
 

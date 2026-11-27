@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS appointments (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
+  UNIQUE KEY uq_active_doctor_slot (doctor_id, appointment_date, time_slot),
   INDEX idx_appt_date (appointment_date),
   INDEX idx_appt_status (status),
   INDEX idx_appt_doctor (doctor_id)

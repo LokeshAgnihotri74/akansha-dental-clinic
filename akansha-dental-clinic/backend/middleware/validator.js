@@ -2,6 +2,12 @@
  * Request Validation Middleware for Akansha Dental Clinic API
  */
 const { error } = require('../utils/responseHelper');
+const { getNowInIST } = require('../utils/slotEngine');
+
+const stripHtml = (val) => {
+  if (typeof val !== 'string') return '';
+  return val.replace(/<[^>]*>?/gm, '').trim();
+};
 
 /**
  * Validate Appointment Booking Request Body
@@ -17,24 +23,29 @@ const validateAppointmentBooking = (req, res, next) => {
     patientEmail,
     email,
     appointmentDate,
-    timeSlot
+    date,
+    timeSlot,
+    slot,
+    notes
   } = req.body;
 
   const errors = [];
 
-  // 1. Patient Name Validation
-  const fullName = patientName || `${patientFirstName || ''} ${patientLastName || ''}`.trim();
-  if (!fullName || fullName.length < 2) {
-    errors.push({ field: 'patientName', message: 'First name is required.' });
+  // 1. Patient Name Validation & HTML Sanitization
+  const rawName = patientName || `${patientFirstName || ''} ${patientLastName || ''}`.trim();
+  const cleanName = stripHtml(rawName);
+  if (!cleanName || cleanName.length < 2) {
+    errors.push({ field: 'patientName', message: 'Valid patient name is required (minimum 2 characters).' });
   }
 
   // 2. 10-Digit Indian Mobile Number Validation
   const rawPhone = patientPhone || phone;
+  let valid10 = '';
   if (!rawPhone) {
     errors.push({ field: 'patientPhone', message: 'Contact number is required.' });
   } else {
     const cleanedPhone = rawPhone.toString().replace(/\D/g, '');
-    const valid10 = cleanedPhone.startsWith('91') && cleanedPhone.length === 12 
+    valid10 = cleanedPhone.startsWith('91') && cleanedPhone.length === 12 
       ? cleanedPhone.slice(2) 
       : cleanedPhone;
 
@@ -47,32 +58,59 @@ const validateAppointmentBooking = (req, res, next) => {
   }
 
   // 3. Email Validation (if provided)
-  const rawEmail = patientEmail || email;
-  if (rawEmail && rawEmail.trim()) {
+  const rawEmail = stripHtml(patientEmail || email || '');
+  if (rawEmail) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(rawEmail.trim())) {
+    if (!emailRegex.test(rawEmail)) {
       errors.push({ field: 'patientEmail', message: 'Please provide a valid email address.' });
     }
   }
 
-  // 4. Appointment Date Validation (YYYY-MM-DD)
-  if (!appointmentDate) {
+  // 4. Appointment Date Validation (Strict YYYY-MM-DD & IST Horizon)
+  const rawDate = (appointmentDate || date || '').toString().trim();
+  if (!rawDate) {
     errors.push({ field: 'appointmentDate', message: 'Appointment date is required.' });
+  } else if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+    errors.push({ field: 'appointmentDate', message: 'Invalid date format. Expected YYYY-MM-DD.' });
   } else {
-    const dateObj = new Date(appointmentDate);
-    if (isNaN(dateObj.getTime())) {
-      errors.push({ field: 'appointmentDate', message: 'Invalid date format. Expected YYYY-MM-DD.' });
+    const istNow = getNowInIST();
+    if (rawDate < istNow.dateStr) {
+      errors.push({ field: 'appointmentDate', message: 'Cannot book an appointment for a past date.' });
+    } else {
+      const [y, m, d] = rawDate.split('-').map(Number);
+      const apptDateObj = new Date(Date.UTC(y, m - 1, d));
+      const dayOfWeek = apptDateObj.getUTCDay();
+
+      if (dayOfWeek === 0) {
+        errors.push({ field: 'appointmentDate', message: 'The clinic is closed on Sundays for routine OPD consultations. Please choose Monday through Saturday.' });
+      }
+
+      // Max 90 days in advance
+      const nowUtc = new Date(Date.UTC(istNow.year, istNow.month - 1, istNow.day));
+      const diffDays = Math.round((apptDateObj - nowUtc) / (1000 * 60 * 60 * 24));
+      if (diffDays > 90) {
+        errors.push({ field: 'appointmentDate', message: 'Appointments can only be scheduled up to 90 days in advance.' });
+      }
     }
   }
 
   // 5. Time Slot Validation
-  if (!timeSlot || typeof timeSlot !== 'string' || !timeSlot.trim()) {
+  const rawSlot = stripHtml((timeSlot || slot || '').toString());
+  if (!rawSlot) {
     errors.push({ field: 'timeSlot', message: 'Please select an appointment time slot.' });
   }
 
   if (errors.length > 0) {
     return error(res, 'Validation failed. Please correct the highlighted errors.', 400, errors);
   }
+
+  // Normalize sanitized values onto req.body
+  req.body.patientName = cleanName;
+  req.body.patientPhone = valid10;
+  req.body.patientEmail = rawEmail;
+  req.body.appointmentDate = rawDate;
+  req.body.timeSlot = rawSlot;
+  req.body.notes = stripHtml(notes || '');
 
   next();
 };
