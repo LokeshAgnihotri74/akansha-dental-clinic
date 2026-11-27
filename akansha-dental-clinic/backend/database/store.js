@@ -1061,6 +1061,19 @@ const loadStore = () => {
 
   if (!store.admins || store.admins.length === 0) {
     store.admins = createInitialSuperAdmin();
+  } else if (process.env.ADMIN_INITIAL_EMAIL || process.env.ADMIN_INITIAL_PASSWORD) {
+    const envEmail = (process.env.ADMIN_INITIAL_EMAIL || 'admin@akanshadental.com').trim().toLowerCase();
+    const envPass = process.env.ADMIN_INITIAL_PASSWORD;
+    const sa = store.admins.find(a => a.role === 'SUPER_ADMIN' || a.id === 1);
+    if (sa) {
+      if (process.env.ADMIN_INITIAL_EMAIL) {
+        sa.email = envEmail;
+        sa.username = envEmail;
+      }
+      if (envPass) {
+        sa.password_hash = bcrypt.hashSync(envPass, 10);
+      }
+    }
   }
   if (!store.patients) store.patients = [];
   if (!store.appointments) store.appointments = [];

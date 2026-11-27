@@ -59,19 +59,26 @@ async function bootstrapDatabase(connection) {
 
     // 3. Ensure Initial Super Admin in MySQL
     try {
+      const email = (process.env.ADMIN_INITIAL_EMAIL || 'admin@akanshadental.com').trim().toLowerCase();
+      const rawPassword = process.env.ADMIN_INITIAL_PASSWORD || 'SuperAdmin@Akansha2026!Secured';
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(rawPassword, salt);
+
       const [adminRows] = await connection.query('SELECT COUNT(*) as count FROM admins WHERE role = "SUPER_ADMIN"');
       if (adminRows[0].count === 0) {
-        const email = (process.env.ADMIN_INITIAL_EMAIL || 'admin@akanshadental.com').trim().toLowerCase();
-        const rawPassword = process.env.ADMIN_INITIAL_PASSWORD || 'SuperAdmin@Akansha2026!Secured';
-        const salt = bcrypt.genSaltSync(10);
-        const hash = bcrypt.hashSync(rawPassword, salt);
-
         console.log(`🛡️ [DB Bootstrap] Initializing Super Admin in MySQL (${email})...`);
         await connection.query(
           `INSERT INTO admins (full_name, username, email, password_hash, phone, role, is_active)
-           VALUES (?, ?, ?, ?, ?, 'SUPER_ADMIN', TRUE)
-           ON DUPLICATE KEY UPDATE full_name=VALUES(full_name)`,
+           VALUES (?, ?, ?, ?, ?, 'SUPER_ADMIN', TRUE)`,
           ['Dr. Akansha Sharma (Chief Director)', email, email, hash, '+91 8130 406 405']
+        );
+      } else if (process.env.ADMIN_INITIAL_PASSWORD) {
+        console.log(`🛡️ [DB Bootstrap] Syncing Super Admin credentials from environment variables (${email})...`);
+        await connection.query(
+          `UPDATE admins 
+           SET email = ?, username = ?, password_hash = ?, is_active = TRUE 
+           WHERE role = 'SUPER_ADMIN' OR id = 1 LIMIT 1`,
+          [email, email, hash]
         );
       }
     } catch (err) {

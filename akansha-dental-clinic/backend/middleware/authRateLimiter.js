@@ -8,7 +8,7 @@
 const failedAttempts = new Map(); // ip -> { count, firstAttemptTime, blockedUntil }
 const requestBurst = new Map();   // ip -> Array<timestamp>
 
-const LOCKOUT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const LOCKOUT_WINDOW_MS = 3 * 60 * 1000; // 3 minutes lockout window
 const MAX_FAILED_ATTEMPTS = 5;
 const BURST_LIMIT = 10;                  // Max 10 attempts per minute
 const BURST_WINDOW_MS = 60 * 1000;       // 1 minute
@@ -34,7 +34,7 @@ const loginRateLimiter = (req, res, next) => {
     const minutesRemaining = Math.max(1, Math.ceil((attempt.blockedUntil - now) / 60000));
     return res.status(429).json({
       success: false,
-      message: `Too many failed login attempts from this network. Access has been temporarily locked for 15 minutes. Please try again after ${minutesRemaining} minute(s).`
+      message: `Too many failed login attempts from this network. Access has been temporarily locked. Please try again after ${minutesRemaining} minute(s).`
     });
   }
 
