@@ -178,7 +178,7 @@ export default function DashboardOverviewPage() {
                 Daily patient booking volume over the last 7 days
               </p>
             </div>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#00D4B2', backgroundColor: '#E6FBF7', padding: '3px 8px', borderRadius: '4px' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0D766E', backgroundColor: '#E6FBF7', padding: '3px 8px', borderRadius: '4px' }}>
               Live Telemetry
             </span>
           </div>

@@ -6,6 +6,8 @@
   --color-accent: #00D4B2;         /* Vibrant Medical Teal */
   --color-accent-hover: #00BA9C;   /* Deep Teal */
   --color-accent-soft: #E6FBF7;    /* Teal Tint Background */
+  --color-accent-text: #0D766E;    /* Deep Clinical Teal for readable text on white/light backgrounds (WCAG AA 5.1:1) */
+  --color-accent-text-hover: #0F5B54;
   --color-secondary: #0E9F6E;      /* Clinical Mint / Success */
   --color-warning: #F59E0B;        /* Amber / Pending */
   --color-danger: #EF4444;         /* Coral Red / Cancelled */

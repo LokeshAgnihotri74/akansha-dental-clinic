@@ -1,16 +1,57 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 export default function Modal({ isOpen, onClose, title, children, maxWidth = '550px' }) {
+  const modalRef = useRef(null);
+
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
     };
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
-    }
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    const focusTimer = setTimeout(() => {
+      if (modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])'
+        );
+        if (focusable.length > 0) {
+          focusable[0].focus();
+        }
+      }
+    }, 50);
+
     return () => {
+      clearTimeout(focusTimer);
       document.body.style.overflow = 'auto';
       window.removeEventListener('keydown', handleKeyDown);
     };
@@ -34,6 +75,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '55
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         style={{
           backgroundColor: '#fff',
           borderRadius: 'var(--radius-lg)',
@@ -49,6 +91,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '55
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="modal-dialog-title"
       >
         <div style={{
           display: 'flex',
@@ -57,7 +100,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '55
           padding: '1.25rem 1.75rem',
           borderBottom: '1px solid var(--color-border)',
         }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>{title}</h3>
+          <h3 id="modal-dialog-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>{title}</h3>
           <button
             onClick={onClose}
             style={{
@@ -68,7 +111,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '55
               padding: '0.25rem',
               borderRadius: 'var(--radius-sm)'
             }}
-            aria-label="Close modal"
+            aria-label="Close modal dialog"
           >
             <X size={20} />
           </button>

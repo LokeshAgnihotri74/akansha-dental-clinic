@@ -238,13 +238,13 @@ export default function MakeContactModal({ isOpen, onClose }) {
                   <strong>+91 {successData.phone}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
-                  <span style={{ color: '#64748b' }}>SMS Notification:</span>
-                  <span style={{ color: '#00875a', fontWeight: 600 }}>Sent (Delivered)</span>
+                  <span style={{ color: '#64748b' }}>Direct Routing:</span>
+                  <span style={{ color: '#0D766E', fontWeight: 600 }}>Received • Front Desk Notified</span>
                 </div>
               </div>
 
               <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '0.75rem', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#166534' }}>
-                📲 <strong>Message Preview:</strong> "Dear {successData.name}, your contact request regarding {successData.reason} has been recorded (Ref: {successData.refCode}). Our desk will call you shortly on {successData.phone}."
+                📋 <strong>Contact Status:</strong> Dear {successData.name}, your inquiry regarding {successData.reason} is recorded (Ref: {successData.refCode}). Our patient care coordinator will call you directly on {successData.phone}.
               </div>
 
               <button

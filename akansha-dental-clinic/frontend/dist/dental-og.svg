@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A2540" />
+      <stop offset="60%" stop-color="#06182A" />
+      <stop offset="100%" stop-color="#003B32" />
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D4B2" />
+      <stop offset="100%" stop-color="#0E9F6E" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)" />
+
+  <!-- Geometric Grid Pattern Overlay -->
+  <g opacity="0.08" stroke="#FFFFFF" stroke-width="1">
+    <line x1="0" y1="105" x2="1200" y2="105" />
+    <line x1="0" y1="210" x2="1200" y2="210" />
+    <line x1="0" y1="315" x2="1200" y2="315" />
+    <line x1="0" y1="420" x2="1200" y2="420" />
+    <line x1="0" y1="525" x2="1200" y2="525" />
+    <line x1="200" y1="0" x2="200" y2="630" />
+    <line x1="400" y1="0" x2="400" y2="630" />
+    <line x1="600" y1="0" x2="600" y2="630" />
+    <line x1="800" y1="0" x2="800" y2="630" />
+    <line x1="1000" y1="0" x2="1000" y2="630" />
+  </g>
+
+  <!-- Decorative Glowing Orb -->
+  <circle cx="1050" cy="180" r="280" fill="#00D4B2" opacity="0.15" filter="blur(60px)" />
+
+  <!-- Logo Tooth Icon -->
+  <g transform="translate(100, 110)">
+    <rect width="90" height="90" rx="20" fill="url(#tealGrad)" />
+    <!-- Tooth SVG in White -->
+    <path d="M45 20C34 20 28 27 28 38C28 50 33 63 38 73C40 78 44 78 46 73C48 66 50 63 55 63C60 63 62 66 64 73C66 78 70 78 72 73C77 63 82 50 82 38C82 27 76 20 65 20C58 20 54 24 50 24C46 24 42 20 45 20Z" fill="#0A2540" />
+    <path d="M68 18L32 68" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+    <circle cx="69" cy="18" r="4.5" fill="#FFFFFF" />
+  </g>
+
+  <!-- Clinic Brand Heading -->
+  <text x="215" y="150" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="28" font-weight="800" fill="#FFFFFF" letter-spacing="-0.5">
+    Akansha Dental Clinic
+  </text>
+  <text x="215" y="185" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="18" font-weight="600" fill="#00D4B2" letter-spacing="2">
+    &amp; IMPLANT CENTER • BHOPAL
+  </text>
+
+  <!-- Main Headline -->
+  <text x="100" y="300" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="56" font-weight="800" fill="#FFFFFF" letter-spacing="-1.5">
+    Advanced Dental Care &amp;
+  </text>
+  <text x="100" y="370" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="56" font-weight="800" fill="#00D4B2" letter-spacing="-1.5">
+    Precision Implantology
+  </text>
+
+  <!-- Subheading Prose -->
+  <text x="100" y="435" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="22" font-weight="400" fill="#CBD5E1">
+    Immediate dental implants, microscopic root canal therapy, digital smile design,
+  </text>
+  <text x="100" y="470" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="22" font-weight="400" fill="#CBD5E1">
+    and clear aligners by senior certified specialists in an ultra-sterile environment.
+  </text>
+
+  <!-- Bottom Pills -->
+  <g transform="translate(100, 520)">
+    <!-- Pill 1 -->
+    <rect width="260" height="48" rx="24" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" />
+    <text x="20" y="30" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="15" font-weight="600" fill="#00D4B2">
+      🏥 Minal Residency, Bhopal
+    </text>
+
+    <!-- Pill 2 -->
+    <rect x="280" width="280" height="48" rx="24" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" />
+    <text x="300" y="30" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF">
+      ⭐ NABH &amp; ISO 9001:2015
+    </text>
+
+    <!-- Pill 3 -->
+    <rect x="580" width="240" height="48" rx="24" fill="url(#tealGrad)" />
+    <text x="605" y="30" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="15" font-weight="800" fill="#0A2540">
+      📞 +91 8130 406 405
+    </text>
+  </g>
+</svg>
