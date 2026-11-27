@@ -14,17 +14,21 @@ import {
   ExternalLink,
   Menu,
   X,
-  Activity
+  KeyRound,
+  ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import DentalLogo from '../components/DentalLogo';
+import ForcePasswordChangeModal from '../components/ForcePasswordChangeModal';
+import AccountSecurityModal from '../components/AccountSecurityModal';
 
 export default function AdminLayout() {
-  const { user, logout, hasRole } = useAuth();
+  const { user, logout, hasRole, mustChangePassword } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [securityModalOpen, setSecurityModalOpen] = useState(false);
 
   const isSuperAdmin = hasRole(['ROLE_SUPER_ADMIN']);
   const isAdmin = hasRole(['ROLE_ADMIN', 'ROLE_SUPER_ADMIN']);
@@ -57,6 +61,17 @@ export default function AdminLayout() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC' }}>
+      {/* MANDATORY: Forced Password Change on First Login */}
+      {mustChangePassword && <ForcePasswordChangeModal />}
+
+      {/* Voluntary Account Security Modal */}
+      {securityModalOpen && (
+        <AccountSecurityModal
+          isOpen={securityModalOpen}
+          onClose={() => setSecurityModalOpen(false)}
+        />
+      )}
+
       {/* Mobile Backdrop */}
       {mobileMenuOpen && (
         <div
@@ -192,11 +207,14 @@ export default function AdminLayout() {
                 fontWeight: 700,
                 fontSize: '0.9rem',
                 border: '2px solid #00D4B2',
+                cursor: 'pointer'
               }}
+              onClick={() => setSecurityModalOpen(true)}
+              title="Click to edit security credentials"
             >
               {user?.fullName?.charAt(0) || user?.username?.charAt(0) || 'A'}
             </div>
-            <div style={{ overflow: 'hidden' }}>
+            <div style={{ overflow: 'hidden', flex: 1 }}>
               <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                 {user?.fullName || user?.username}
               </div>
@@ -205,28 +223,53 @@ export default function AdminLayout() {
               </div>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              padding: '0.5rem',
-              backgroundColor: 'rgba(239, 68, 68, 0.15)',
-              color: '#F87171',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '6px',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
-            }}
-          >
-            <LogOut size={14} />
-            Sign Out
-          </button>
+
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button
+              onClick={() => setSecurityModalOpen(true)}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                padding: '0.45rem',
+                backgroundColor: 'rgba(0, 212, 178, 0.12)',
+                color: '#00D4B2',
+                border: '1px solid rgba(0, 212, 178, 0.3)',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+              title="Change Password & Email"
+            >
+              <KeyRound size={13} />
+              <span>Security</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                padding: '0.45rem',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                color: '#F87171',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <LogOut size={13} />
+              <span>Sign Out</span>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -266,7 +309,27 @@ export default function AdminLayout() {
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <button
+              onClick={() => setSecurityModalOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.82rem',
+                color: '#0A2540',
+                padding: '0.4rem 0.85rem',
+                borderRadius: '6px',
+                border: '1px solid #CBD5E1',
+                fontWeight: 600,
+                backgroundColor: '#fff',
+                cursor: 'pointer'
+              }}
+            >
+              <KeyRound size={14} color="#00BA9C" />
+              <span>Security Credentials</span>
+            </button>
+
             <Link
               to="/"
               target="_blank"
@@ -275,7 +338,7 @@ export default function AdminLayout() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                fontSize: '0.85rem',
+                fontSize: '0.82rem',
                 color: '#0A2540',
                 textDecoration: 'none',
                 padding: '0.4rem 0.85rem',

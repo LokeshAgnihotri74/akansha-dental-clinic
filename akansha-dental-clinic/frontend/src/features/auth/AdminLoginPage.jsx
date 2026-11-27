@@ -9,12 +9,11 @@ import {
   EyeOff, 
   AlertCircle, 
   ArrowLeft, 
-  KeyRound, 
-  UserCheck,
   CalendarCheck,
   Activity,
   Sparkles,
-  LockKeyhole
+  LockKeyhole,
+  ShieldAlert
 } from 'lucide-react';
 import Spinner from '../../components/Spinner';
 import DentalLogo from '../../components/DentalLogo';
@@ -37,7 +36,7 @@ export const AdminLoginPage = () => {
     setError(null);
 
     if (!username.trim() || !password) {
-      setError('Please provide both username/email and password.');
+      setError('Please provide your registered administrative email/username and password.');
       return;
     }
 
@@ -46,16 +45,10 @@ export const AdminLoginPage = () => {
       await login(username.trim(), password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || 'Authentication failed. Please check your credentials.');
+      setError(err.message || 'Authentication failed. Please verify your credentials or contact the Super Administrator.');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const fillQuickCredentials = (userVal, passVal) => {
-    setUsername(userVal);
-    setPassword(passVal);
-    setError(null);
   };
 
   return (
@@ -78,7 +71,7 @@ export const AdminLoginPage = () => {
           <div style={{ fontSize: '0.82rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>🏥 Minal Residency, Bhopal</span>
             <span>•</span>
-            <span style={{ color: '#00D4B2' }}>NABH &amp; ISO 9001:2015 Certified Practice</span>
+            <span style={{ color: '#00D4B2' }}>NABH &amp; ISO 9001:2015 Practice</span>
           </div>
         </div>
 
@@ -95,7 +88,7 @@ export const AdminLoginPage = () => {
 
           <p className="admin-showcase-desc">
             Unified digital command center for dentists, prosthodontists, dental hygienists, 
-            and front-desk administration to coordinate patient care, appointments, 3D imaging, and operatory workflows.
+            and clinical administration to coordinate patient care, appointments, 3D imaging, and operatory workflows.
           </p>
 
           {/* 4 Feature Cards */}
@@ -161,7 +154,7 @@ export const AdminLoginPage = () => {
 
           <div style={{ fontSize: '0.74rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <LockKeyhole size={14} color="#00D4B2" />
-            <span>DISHA &amp; HIPAA Compliant Security</span>
+            <span>DISHA &amp; HIPAA Compliant Zero-Trust Security</span>
           </div>
         </div>
       </div>
@@ -190,7 +183,7 @@ export const AdminLoginPage = () => {
             </p>
             <div>
               <span className="admin-roles-tag">
-                👨‍⚕️ Doctors • 👩‍💼 Staff • 🛡️ Admin
+                🛡️ Super Admin &amp; Authorized Personnel Only
               </span>
             </div>
           </div>
@@ -219,7 +212,7 @@ export const AdminLoginPage = () => {
           <form onSubmit={handleSubmit}>
             <div className="admin-form-group">
               <label className="admin-form-label">
-                Username or Email
+                Administrative Email ID or Username
               </label>
               <div className="admin-input-wrapper">
                 <div className="admin-input-icon">
@@ -229,7 +222,7 @@ export const AdminLoginPage = () => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin@akanshadental.com"
+                  placeholder="e.g. admin@akanshadental.com"
                   required
                   autoFocus
                   className="admin-input-field"
@@ -243,7 +236,7 @@ export const AdminLoginPage = () => {
                   Password
                 </label>
                 <span style={{ fontSize: '0.74rem', color: '#64748B' }}>
-                  Secure SSL
+                  256-bit Encrypted
                 </span>
               </div>
               <div className="admin-input-wrapper">
@@ -254,7 +247,7 @@ export const AdminLoginPage = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder="Enter your confidential password"
                   required
                   className="admin-input-field"
                   style={{ paddingRight: '42px' }}
@@ -278,76 +271,41 @@ export const AdminLoginPage = () => {
               {isSubmitting ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Spinner size="sm" color="#0A2540" />
-                  <span>Authenticating Station...</span>
+                  <span>Verifying Credentials...</span>
                 </span>
               ) : (
                 <>
-                  <span>Sign In to Clinical Portal</span>
+                  <span>Sign In to Clinical Workstation</span>
                   <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>→</span>
                 </>
               )}
             </button>
           </form>
 
-          {/* Quick Demo Credentials */}
-          <div className="admin-demo-section">
-            <div className="admin-demo-label">
-              <span>⚡ Quick Demo Credentials</span>
-              <span style={{ fontSize: '0.7rem', color: '#00BA9C', fontWeight: 600 }}>1-Click Fill</span>
-            </div>
-            <div className="admin-demo-grid">
-              <button
-                type="button"
-                onClick={() => fillQuickCredentials('admin@akanshadental.com', 'password123')}
-                className="admin-demo-card"
-              >
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  background: 'rgba(0, 212, 178, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <KeyRound size={16} color="#00BA9C" />
-                </div>
-                <div>
-                  <div className="admin-demo-card-title">Super Admin</div>
-                  <span className="admin-demo-card-sub">Full Clinical Control</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fillQuickCredentials('rohan@akanshadental.com', 'password123')}
-                className="admin-demo-card"
-              >
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  background: 'rgba(10, 37, 64, 0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <UserCheck size={16} color="#0A2540" />
-                </div>
-                <div>
-                  <div className="admin-demo-card-title">Staff Desk</div>
-                  <span className="admin-demo-card-sub">OPD &amp; Reception</span>
-                </div>
-              </button>
+          {/* Secure Access Notice (Replaces unsafe 1-click bypass) */}
+          <div style={{
+            marginTop: '1.75rem',
+            padding: '14px',
+            borderRadius: '10px',
+            backgroundColor: '#F8FAFC',
+            border: '1px solid #E2E8F0',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px'
+          }}>
+            <ShieldAlert size={20} color="#00BA9C" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+              <strong style={{ color: '#0A2540', display: 'block', marginBottom: '2px' }}>
+                Restricted Access Policy
+              </strong>
+              Only Super Admin and authorized clinical staff provisioned by the Super Administrator can access this workstation. Public self-registration is permanently disabled.
             </div>
           </div>
 
           {/* Security Footer Note */}
           <div className="admin-security-footer">
             <ShieldCheck size={14} color="#00BA9C" />
-            <span>256-Bit SSL Encrypted Healthcare Portal</span>
+            <span>DISHA &amp; HIPAA Compliant Clinical Portal</span>
           </div>
         </div>
       </div>

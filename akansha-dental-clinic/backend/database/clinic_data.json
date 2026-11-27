@@ -14,7 +14,8 @@
         "ROLE_ADMIN"
       ],
       "phone": "+91 8130 406 405",
-      "is_active": true
+      "is_active": true,
+      "mustChangePassword": true
     },
     {
       "id": 2,
@@ -29,7 +30,8 @@
         "ROLE_STAFF"
       ],
       "phone": "+91 9876 543 210",
-      "is_active": true
+      "is_active": true,
+      "mustChangePassword": true
     }
   ],
   "doctors": [

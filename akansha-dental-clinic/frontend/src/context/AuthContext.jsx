@@ -30,8 +30,9 @@ export const AuthProvider = ({ children }) => {
       try {
         const response = await authService.getMe();
         if (response && response.success && response.data) {
-          setUser(response.data);
-          localStorage.setItem(USER_KEY, JSON.stringify(response.data));
+          const freshData = response.data;
+          setUser(freshData);
+          localStorage.setItem(USER_KEY, JSON.stringify(freshData));
         } else {
           logout();
         }
@@ -49,17 +50,50 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     const res = await authService.login(username, password);
     if (res && res.success && res.data) {
-      const { accessToken, userId, username: uname, email, fullName, roles } = res.data;
-      const userData = { id: userId, username: uname, email, fullName, roles };
+      const { accessToken, userId, username: uname, email, fullName, roles, role, mustChangePassword } = res.data;
+      const userData = {
+        id: userId,
+        userId,
+        username: uname,
+        email,
+        fullName,
+        roles,
+        role,
+        mustChangePassword: Boolean(mustChangePassword)
+      };
 
       localStorage.setItem(TOKEN_KEY, accessToken);
       localStorage.setItem(USER_KEY, JSON.stringify(userData));
 
       setToken(accessToken);
       setUser(userData);
+      return userData;
+    } else {
+      throw new Error(res?.message || 'Authentication failed');
+    }
+  };
+
+  const changePassword = async (newPassword, currentPassword) => {
+    const res = await authService.changePassword(newPassword, currentPassword);
+    if (res && res.success) {
+      const updatedUser = { ...user, mustChangePassword: false };
+      setUser(updatedUser);
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+      return res;
+    } else {
+      throw new Error(res?.message || 'Failed to update password');
+    }
+  };
+
+  const updateProfile = async (profileData) => {
+    const res = await authService.updateProfile(profileData);
+    if (res && res.success && res.data) {
+      const updatedUser = { ...user, ...res.data };
+      setUser(updatedUser);
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
       return res.data;
     } else {
-      throw new Error(res?.message || 'Login failed');
+      throw new Error(res?.message || 'Failed to update profile');
     }
   };
 
@@ -100,6 +134,7 @@ export const AuthProvider = ({ children }) => {
   const isSuperAdmin = hasRole('ROLE_SUPER_ADMIN');
   const isAdmin = isSuperAdmin || hasRole('ROLE_ADMIN');
   const isStaff = hasRole('ROLE_STAFF');
+  const mustChangePassword = Boolean(user?.mustChangePassword);
 
   const value = {
     user,
@@ -108,10 +143,13 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     login,
     logout,
+    changePassword,
+    updateProfile,
     hasRole,
     isSuperAdmin,
     isAdmin,
     isStaff,
+    mustChangePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

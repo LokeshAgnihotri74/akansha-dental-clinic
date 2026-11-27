@@ -18,13 +18,29 @@ export const authService = {
   },
 
   /**
+   * Change password (on first login or on-demand)
+   */
+  changePassword: async (newPassword, currentPassword) => {
+    return await apiClient.post('/auth/change-password', {
+      newPassword,
+      currentPassword
+    });
+  },
+
+  /**
+   * Update authenticated user profile
+   */
+  updateProfile: async (data) => {
+    return await apiClient.put('/auth/profile', data);
+  },
+
+  /**
    * Terminate active session and record audit trail
    */
   logout: async () => {
     try {
       return await apiClient.post('/auth/logout');
     } catch {
-      // Local clean up even if network fails
       return { success: true };
     }
   },

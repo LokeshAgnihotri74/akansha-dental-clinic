@@ -13,7 +13,6 @@ replay_pid*
 
 # Node / React
 node_modules/
-dist/
 dist-ssr/
 *.local
 .npm/

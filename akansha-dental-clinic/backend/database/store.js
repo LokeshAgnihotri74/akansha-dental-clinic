@@ -25,7 +25,9 @@ const INITIAL_DATA = {
       role: 'SUPER_ADMIN',
       roles: ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'],
       phone: '+91 8130 406 405',
-      is_active: true
+      is_active: true,
+      mustChangePassword: true,
+      must_change_password: true
     },
     {
       id: 2,
@@ -38,7 +40,9 @@ const INITIAL_DATA = {
       role: 'STAFF',
       roles: ['ROLE_STAFF'],
       phone: '+91 9876 543 210',
-      is_active: true
+      is_active: true,
+      mustChangePassword: true,
+      must_change_password: true
     }
   ],
   doctors: [

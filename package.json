@@ -6,7 +6,7 @@
   "scripts": {
     "build:frontend": "npm --prefix akansha-dental-clinic/frontend install && npm --prefix akansha-dental-clinic/frontend run build",
     "build:backend": "npm --prefix akansha-dental-clinic/backend install",
-    "build": "npm run build:frontend && npm run build:backend",
+    "build": "npm --prefix akansha-dental-clinic/backend install",
     "start": "node akansha-dental-clinic/backend/server.js"
   },
   "keywords": [
