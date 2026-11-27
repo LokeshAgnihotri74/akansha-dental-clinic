@@ -267,8 +267,45 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+const updateProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id || req.user.userId;
+    const { fullName, phone } = req.body;
+
+    if (getIsDbConnected()) {
+      try {
+        await query('UPDATE admins SET full_name = COALESCE(?, full_name), phone = COALESCE(?, phone) WHERE id = ?', [fullName || null, phone || null, userId]);
+        const rows = await query('SELECT id, full_name, username, email, phone, role FROM admins WHERE id = ?', [userId]);
+        return success(res, rows[0], 'Profile updated in MySQL.');
+      } catch (dbErr) {
+        console.warn('MySQL updateProfile error:', dbErr.message);
+      }
+    }
+
+    const store = getStore();
+    const user = store.admins.find(u => u.id === userId || u.userId === userId);
+    if (!user) return error(res, 'User not found.', 404);
+    if (fullName) {
+      user.fullName = fullName.trim();
+      user.full_name = fullName.trim();
+    }
+    if (phone) user.phone = phone.trim();
+    saveStore();
+
+    return success(res, user, 'Profile updated.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const logout = async (req, res) => {
+  return success(res, null, 'Logged out successfully.');
+};
+
 module.exports = {
   login,
   getMe,
-  changePassword
+  changePassword,
+  updateProfile,
+  logout
 };

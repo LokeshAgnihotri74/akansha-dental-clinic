@@ -258,7 +258,9 @@ const deleteInquiry = async (req, res, next) => {
 
 module.exports = {
   submitInquiry,
+  submitContactRequest: submitInquiry,
   getInquiries,
+  searchInquiries: getInquiries,
   getInquiryById,
   updateStatus,
   deleteInquiry

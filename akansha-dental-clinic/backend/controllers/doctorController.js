@@ -261,10 +261,56 @@ const deleteDoctor = async (req, res, next) => {
   }
 };
 
+const getSchedules = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (getIsDbConnected()) {
+      try {
+        const rows = await query('SELECT * FROM doctor_schedules WHERE doctor_id = ? ORDER BY day_of_week ASC', [id]);
+        return success(res, rows, 'Doctor schedules retrieved from MySQL.');
+      } catch (dbErr) {
+        console.warn('MySQL getSchedules error:', dbErr.message);
+      }
+    }
+    const store = getStore();
+    const doc = store.doctors.find(d => d.id === id);
+    if (!doc) return error(res, `Doctor #${id} not found`, 404);
+    return success(res, doc.schedules || [], 'Doctor schedules retrieved.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const toggleStatus = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (getIsDbConnected()) {
+      try {
+        await query('UPDATE doctors SET is_active = NOT is_active WHERE id = ?', [id]);
+        const rows = await query('SELECT * FROM doctors WHERE id = ?', [id]);
+        return success(res, normalizeDoctor(rows[0]), 'Doctor status toggled in MySQL.');
+      } catch (dbErr) {
+        console.warn('MySQL toggleStatus error:', dbErr.message);
+      }
+    }
+    const store = getStore();
+    const doc = store.doctors.find(d => d.id === id);
+    if (!doc) return error(res, `Doctor #${id} not found`, 404);
+    doc.is_active = !doc.is_active;
+    doc.active = doc.is_active;
+    saveStore();
+    return success(res, normalizeDoctor(doc), 'Doctor status toggled.');
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getDoctors,
   getDoctorById,
   createDoctor,
   updateDoctor,
-  deleteDoctor
+  deleteDoctor,
+  getSchedules,
+  toggleStatus
 };

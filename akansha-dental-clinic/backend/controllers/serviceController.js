@@ -201,10 +201,34 @@ const toggleStatus = async (req, res, next) => {
   }
 };
 
+const deleteService = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (getIsDbConnected()) {
+      try {
+        await query('UPDATE services SET is_active = FALSE WHERE id = ?', [id]);
+        return success(res, null, `Treatment #${id} deactivated in MySQL.`);
+      } catch (dbErr) {
+        console.warn('MySQL deleteService error:', dbErr.message);
+      }
+    }
+    const store = getStore();
+    const srv = store.services.find(s => s.id === id);
+    if (!srv) return error(res, `Service #${id} not found`, 404);
+    srv.is_active = false;
+    srv.active = false;
+    saveStore();
+    return success(res, null, `Treatment #${id} deactivated.`);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getServices,
   getServiceById,
   createService,
   updateService,
-  toggleStatus
+  toggleStatus,
+  deleteService
 };

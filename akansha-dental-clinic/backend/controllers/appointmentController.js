@@ -879,11 +879,41 @@ const reschedule = async (req, res, next) => {
   }
 };
 
+const deleteAppointment = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+
+    if (getIsDbConnected()) {
+      try {
+        await query('UPDATE appointments SET is_active = FALSE, status = "CANCELLED" WHERE id = ?', [id]);
+        return success(res, null, `Appointment #${id} successfully cancelled and removed from active schedule.`);
+      } catch (dbErr) {
+        console.warn('MySQL deleteAppointment error:', dbErr.message);
+      }
+    }
+
+    const store = getStore();
+    const appt = store.appointments.find(a => a.id === id);
+    if (!appt) {
+      return error(res, `Appointment #${id} not found.`, 404);
+    }
+
+    appt.is_active = false;
+    appt.status = 'CANCELLED';
+    saveStore();
+
+    return success(res, null, `Appointment #${id} successfully cancelled and removed.`);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getSlots,
   bookAppointment,
   searchAppointments,
   getAppointmentById,
   updateStatus,
-  reschedule
+  reschedule,
+  deleteAppointment
 };
